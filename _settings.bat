@@ -17,9 +17,9 @@ set "KAPE_MODULES=^!EZParser"
 set "THOR_ARGS=--utc --nothordb"
 
 :: [FTK Settings]
-:: Arguments for Disk Image (Legacy Option 2)
-:: Format: E01, 2GB chunks, Compression 6
-set "FTK_ARGS=--e01 --frag 2048M --compress 6 --verify"
+:: Arguments for Disk Image (Modern & Legacy)
+:: Format: RAW, 1TB chunks, Compression 9 (max)
+set "FTK_ARGS=--compress 9 --frag 1TB"
 
 :: ==========================================
 :: END SETTINGS

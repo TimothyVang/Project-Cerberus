@@ -76,25 +76,23 @@ Start-Process -FilePath $ThorExe -ArgumentList "--logfile `"$ThorLogFile`" --htm
 - Output directory contains: `COMPUTERNAME.txt`, `COMPUTERNAME.html`, CSV files, and summary reports
 
 **FTK Imager**:
-- Target: `\\.\PhysicalDrive0` (raw disk access via Windows device namespace)
-- Output: E01 format (Expert Witness Format) with:
-  - `--frag 2048M`: Split into 2GB segments (e.g., `image.E01`, `image.E02`, etc.)
-  - `--compress 6`: Compression level 6 (balance of speed vs size)
-  - `--verify`: Cryptographic hash verification after acquisition
+- Target: `C:` (logical drive imaging)
+- Output: RAW format (dd-style raw disk image) with:
+  - `--compress 9`: Maximum compression level (saves storage space on large images)
+  - `--frag 1TB`: Split into 1TB chunks (e.g., `image.raw`, `image.raw.001`, etc.)
+  - ⚠️ No verification flag (not used in production deployments)
 - Legacy mode (x86) uses `start /low` to reduce CPU priority and prevent system crashes on fragile kernels
 - Memory capture uses `--capture-memory <path>` with `--compress 1` (minimal compression for speed)
+- Example: `ftkimager.exe C: "Evidence\HOSTNAME_Disk.raw" --compress 9 --frag 1TB`
 
 ### MinIO Upload Architecture
 
 The agent uses **environment variable authentication** pattern (Cerberus_Agent.ps1:67):
 ```powershell
-$env:MC_HOST_cerberus = "https://${ACCESS_KEY}:${SECRET_KEY}@${MINIO_SERVER}"
-# For directories (auto-detected with Test-Path):
-& $MinioExe cp --recursive "$FilePath" "cerberus/$UPLOAD_BUCKET/" --insecure
-# For files:
-& $MinioExe cp "$FilePath" "cerberus/$UPLOAD_BUCKET/" --insecure
+$env:MC_HOST_minio = "https://${ACCESS_KEY}:${SECRET_KEY}@${MINIO_SERVER}"
+& $MinioExe put "$FilePath" "minio\$UPLOAD_BUCKET" --insecure
 ```
-⚠️ **Note:** Use `mc cp` (NOT `mc put`). Directories require `--recursive` flag.
+⚠️ **Note:** Use `mc put` command (matches working KAPE script pattern). Path uses backslash format.
 
 **Upload Logic Flow:**
 1. Tool execution completes and saves to `Evidence\<hostname>-<tool>`
@@ -179,7 +177,7 @@ Edit `Cerberus_Config.json`:
 ```batch
 set "KAPE_TARGETS=^!SANS_Triage,IISLogFiles,Exchange"
 set "THOR_ARGS=--nocsv --utc --nothordb"
-set "FTK_ARGS=--e01 --frag 2048M --compress 6 --verify"
+set "FTK_ARGS=--compress 9 --frag 1TB"
 ```
 
 **For Remote Mode**: Edit `Cerberus_Config.json` → `Tools` section
@@ -256,7 +254,7 @@ Start-Process -FilePath $ThorExe -ArgumentList $args -Wait -NoNewWindow
 
 **Environment Variable Auth:**
 - No temporary credential files created (opsec consideration)
-- Credentials only in memory: `$env:MC_HOST_cerberus = "https://..."`
+- Credentials only in memory: `$env:MC_HOST_minio = "https://..."`
 - Cleared when PowerShell session ends
 
 ### Evidence Preservation & Naming
@@ -279,16 +277,16 @@ Evidence/
 ├── HOSTNAME-THOR/
 │   ├── thor.txt                # Main scan log
 │   └── thor-summary.txt        # Summary report
-├── HOSTNAME-Disk.E01           # First segment of disk image
-├── HOSTNAME-Disk.E02           # Second segment (if >2GB)
-└── HOSTNAME-Disk.txt           # FTK metadata/hash log
+├── HOSTNAME-Disk.raw           # RAW disk image (or first segment if >1TB)
+├── HOSTNAME-Disk.raw.001       # Additional segment (if >1TB)
+└── HOSTNAME-FTK.log            # FTK acquisition log
 ```
 
 **Forensic Integrity Rules:**
 - Evidence is **NEVER** auto-deleted (fail-safe design)
 - Upload failures don't trigger cleanup
 - Large files compressed **in addition to** (not instead of) originals
-- Hash verification enabled on disk images (`--verify` flag)
+- RAW format disk images with maximum compression for storage efficiency
 
 ### Legacy System Support
 - Uses x86 binaries from `Bin\FTK\x86` for Windows XP/2003/2008
@@ -339,7 +337,7 @@ This is a **forensic toolkit** for authorized incident response and security tes
 
 **Administrator Rights Required:**
 - Batch launcher checks via `net session` command (line 7-17)
-- Required for raw disk access (`\\.\PhysicalDrive0`)
+- Required for logical drive imaging (`C:`)
 - Required for memory acquisition
 - Required for VSS (Volume Shadow Copy) access by KAPE
 

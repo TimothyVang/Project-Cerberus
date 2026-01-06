@@ -145,10 +145,10 @@ if "%MChoice%"=="3" (
         goto MODERN_MODE
     )
     
-    :: Arguments from QRF/Legacy SOP: "\\.\PhysicalDrive0" <Output> --e01 --frag 2GB --compress 6
-    :: We use "EVIDENCE\Hostname_Disk" as prefix
-    
-    start /low /wait "" "%BIN%\FTK\x64\ftkimager.exe" "\\.\PhysicalDrive0" "%EVIDENCE%\%COMPUTERNAME%_Disk" --e01 --frag 2048M --compress 6 --verify
+    :: Arguments: C: <Output.raw> --compress 9 --frag 1TB (RAW format)
+    :: We use "EVIDENCE\Hostname_Disk.raw" as output file
+
+    start /low /wait "" "%BIN%\FTK\x64\ftkimager.exe" C: "%EVIDENCE%\%COMPUTERNAME%_Disk.raw" --compress 9 --frag 1TB
     
     echo.
     echo [SUCCESS] Disk Image complete.
@@ -208,10 +208,10 @@ if "%LChoice%"=="2" (
         goto LEGACY_MODE
     )
     
-    :: Arguments from QRF/Legacy SOP: "\\.\PhysicalDrive0" <Output> --e01 --frag 2GB --compress 6
-    :: We use "EVIDENCE\Hostname_Disk" as prefix
-    
-    start /low /wait "" "%BIN%\FTK\x86\ftkimager.exe" "\\.\PhysicalDrive0" "%EVIDENCE%\%COMPUTERNAME%_Disk" --e01 --frag 2048M --compress 6 --verify
+    :: Arguments: C: <Output.raw> --compress 9 --frag 1TB (RAW format)
+    :: We use "EVIDENCE\Hostname_Disk.raw" as output file
+
+    start /low /wait "" "%BIN%\FTK\x86\ftkimager.exe" C: "%EVIDENCE%\%COMPUTERNAME%_Disk.raw" --compress 9 --frag 1TB
     
     echo.
     echo [SUCCESS] Disk Image complete.

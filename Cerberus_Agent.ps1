@@ -139,8 +139,8 @@ else {
         $FtkArgs = $Config.Tools.FTK.Args
         $LogFile = "$EvidenceDir\$env:COMPUTERNAME-FTK.log"
         
-        Write-Log "[INFO] Acquiring PhysicalDrive0 to $FtkImageBase.E01..."
-        Start-Process -FilePath $FtkExe -ArgumentList "\\.\PhysicalDrive0 `"$FtkImageBase`" $FtkArgs" -Wait -NoNewWindow
+        Write-Log "[INFO] Acquiring C: drive to $FtkImageBase.raw..."
+        Start-Process -FilePath $FtkExe -ArgumentList "C: `"$FtkImageBase.raw`" $FtkArgs" -Wait -NoNewWindow
         
         Write-Log "FTK Acquisition Finished."
     }
@@ -159,7 +159,7 @@ else {
         Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-RAM"
     }
     elseif ($Tool -eq "FTK") {
-        # Upload all E01 segments and logs
+        # Upload all RAW image files and logs
         Get-ChildItem -Path "$EvidenceDir" -Filter "$env:COMPUTERNAME-Disk.*" | ForEach-Object {
             Upload-To-MinIO -FilePath $_.FullName
         }

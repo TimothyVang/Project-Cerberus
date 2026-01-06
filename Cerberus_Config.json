@@ -14,7 +14,7 @@
             "RamArgs": "--msource C:\\ --mdest ${Output} --zm true --module MagnetForensics_RAMCapture --zpw NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk="
         },
         "FTK": {
-            "Args": "--e01 --frag 2048M --compress 6 --verify"
+            "Args": "--compress 9 --frag 1TB"
         }
     }
 }
