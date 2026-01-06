@@ -1,0 +1,20 @@
+{
+    "MinIO": {
+        "Server": "10.1.15.173:8443",
+        "AccessKey": "GvQuT3V8NazepIaQfnlm",
+        "SecretKey": "ZEx4rJBa78hWGJyKQdxtraMVVTVeWEVnK4GWxR3t",
+        "Bucket": "upload"
+    },
+    "Tools": {
+        "Thor": {
+            "Args": "--nocsv --utc --nothordb"
+        },
+        "Kape": {
+            "TriageArgs": "--tsource C: --tdest ${Output} --tflush --target !SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --ifw --vhdx TargetsOutput_%m --zpw NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk=",
+            "RamArgs": "--msource C:\\ --mdest ${Output} --zm true --module MagnetForensics_RAMCapture --zpw NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk="
+        },
+        "FTK": {
+            "Args": "--e01 --frag 2048M --compress 6 --verify"
+        }
+    }
+}

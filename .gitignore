@@ -1,0 +1,18 @@
+# Project Cerberus Ignore File
+
+# CRITICAL: Never upload Evidence or Logs
+Evidence/
+Logs/
+
+# Temporary Files
+*.tmp
+*.log
+debug_*.log
+
+# Editor Files
+.vscode/
+.idea/
+
+# Large binaries (Optional - remove if you have LFS)
+# *.exe
+# *.zip

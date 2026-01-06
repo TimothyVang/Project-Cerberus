@@ -1,0 +1,5 @@
+[2026-01-05 22:04:57.2837359 | INF] KAPE directory: C:\Users\newbi\Desktop\PUG Projects\Project Cerberus\Project_Cerberus_Kit\Bin\KAPE
+[2026-01-05 22:04:57.2892415 | INF] Command line:   --tsource C: --tdest C:\Users\newbi\Desktop\PUG Projects\Project Cerberus\Project_Cerberus_Kit\Evidence\DESKTOP-TS1J2H8_KAPE --tflush --target EZParser --gui 
+[2026-01-05 22:04:57.2897443 | INF] System info: Machine name: DESKTOP-TS1J2H8, 64-bit: true, User: newbi OS: "Windows10" (10.0.26200)
+[2026-01-05 22:04:57.7323755 | INF] Using Target operations
+[2026-01-05 22:04:57.7343789 | FTL] Target EZParser not found. Exiting

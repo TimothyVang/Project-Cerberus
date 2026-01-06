@@ -1,0 +1,520 @@
+Open Source License Acknowledgement:
+===============================================
+
+List of third-party software components used by THOR 10 with open source licensing requirements.
+
+golang.org
+Copyright (c) 2009 The Go Authors
+Licensed under BSD-3 License
+----------
+OpenSSL
+Copyright (c) OpenSSL
+Licensed under OpenSSL license (https://www.openssl.org/source/license.html)
+----------
+YARA
+Copyright (c) 2007-2016 The YARA Authors
+Licensed under BSD-3 License
+----------
+github.com/Azure/go-ntlmssp
+Copyright (c) 2016 Microsoft
+Licensed under MIT License
+----------
+github.com/Codehardt/go-autoruns
+github.com/botherder/go-autoruns
+Copyright (c) 2018 Claudio Guarnieri
+Licensed under MIT License
+----------
+github.com/Codehardt/go-pefile
+github.com/omarghader/pefile-go
+Copyright (c) 2004-2015 Ero Carrera
+Licensed under MIT License
+----------
+github.com/secDre4mer/go-cpulimit
+github.com/Codehardt/go-cpulimit
+github.com/Codehardt/go-handle
+github.com/Codehardt/go-ntlm-proxy-auth
+github.com/Codehardt/go-osversion
+github.com/Codehardt/go-priority
+github.com/Codehardt/go-taskscheduler
+Copyright (c) 2018 Marcel Gebhardt
+Licensed under MIT License
+----------
+github.com/Codehardt/go-win64api
+github.com/iamacarpet/go-win64api
+Copyright (c) 2018 Samuel Melrose
+Licensed under MIT License
+----------
+github.com/Codehardt/mmap-go
+github.com/ncw/mmap-go
+Copyright (c) 2011, Evan Shaw <edsrzf@gmail.com>
+Licensed under BSD-3 License
+----------
+github.com/StackExchange/wmi
+Copyright (c) 2013 Stack Exchange
+Licensed under MIT License
+----------
+github.com/Velocidex/regparser
+github.com/Velocidex/ordereddict
+github.com/secDre4mer/regparser
+www.velocidex.com/golang/go-ntfs
+www.velocidex.com/golang/evtx
+github.com/Velocidex/evtx
+www.velocidex.com/golang/go-pe
+www.velocidex.com/golang/binparsergen
+Copyright (c) 2018-2020 velocidex
+Licensed under Apache License 2.0
+----------
+github.com/andrewkroh/sys
+Copyright (c) 2009 The Go Authors
+----------
+github.com/botherder/go-files
+Copyright (c) 2018 Nex
+Licensed under MIT License
+----------
+github.com/coreos/go-systemd/v22
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/dsnet/compress
+Copyright (c) 2015, Joe Tsai and The Go Authors
+Licensed under BSD-3 License
+----------
+github.com/dustin/go-humanize
+Copyright (c) 2005-2008 Dustin Sallings <dustin@spy.net>
+Licensed under MIT License
+----------
+github.com/elastic/beats
+github.com/elastic/go-ucfg
+github.com/elastic/go-sysinfo
+Copyright (c) 2014-2020 Elasticsearch BV
+Licensed under Apache License 2.0
+----------
+github.com/fatih/color
+Copyright (c) 2013 Fatih Arslan
+Licensed under MIT License
+----------
+github.com/fsnotify/fsnotify
+Copyright (c) 2012 The Go Authors
+Copyright (c) 2012 fsnotify Authors
+Licensed under BSD-3 License
+----------
+github.com/gizak/termui/v3
+github.com/gizak/termui/v3/widgets
+github.com/gizak/termui/v3/drawille
+Copyright (c) 2015 Zack Guo
+Licensed under MIT License
+----------
+github.com/go-ole/go-ole
+Copyright (c) 2013-2017 Yasuhiro Matsumoto, <mattn.jp@gmail.com>
+Licensed under MIT License
+----------
+github.com/godbus/dbus
+Copyright (c) 2013, Georg Reinke (<guelfey at gmail dot com>), Google
+Licensed under BSD-2 License
+----------
+github.com/gofrs/uuid
+Copyright (C) 2013-2018 by Maxim Bublis <b@codemonkey.ru>
+Licensed under MIT License
+----------
+github.com/google/pprof
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/golang/snappy
+Copyright (c) 2011 The Snappy-Go Authors
+Licensed under BSD-3 License
+----------
+github.com/gonutz/w32/v2
+Copyright (c) 2021 gonutz
+Licensed under MIT License
+----------
+github.com/hashicorp/go-multierror
+github.com/hashicorp/golang-lru
+github.com/hashicorp/errwrap
+(no copyright notes found)
+Licensed under Mozilla Public License 2.0
+----------
+github.com/hillu/go-yara/v4
+Copyright (c) 2015-2020 Hilko Bengen <bengen@hilluzination.de>
+Licensed under BSD-2 License
+----------
+github.com/inconshreveable/mousetrap
+Copyright (c) 2014 Alan Shreve
+Licensed under Apache License 2.0
+----------
+github.com/joeshaw/multierror
+Copyright (c) 2014 Joe Shaw
+Licensed under MIT License
+----------
+github.com/kardianos/service
+Copyright (c) 2015 Daniel Theophanes
+Licensed under zlib License
+----------
+github.com/marcsauter/single
+Copyright (c) 2018 Marc Sauter
+Licensed under MIT License
+----------
+github.com/mattn/go-colorable
+github.com/mattn/go-isatty
+github.com/mattn/go-runewidth
+github.com/mattn/go-shellwords
+github.com/mattn/go-sqlite3
+Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
+Licensed under MIT License
+----------
+github.com/mitchellh/go-wordwrap
+Copyright (c) 2014 Mitchell Hashimoto
+Licensed under MIT License
+----------
+github.com/mholt/archiver
+Copyright (c) 2016 Matthew Holt
+Licensed under MIT License
+----------
+github.com/nsf/termbox-go
+Copyright (C) 2012 termbox-go authors
+Licensed under MIT License
+----------
+github.com/nwaples/rardecode
+github.com/secDre4mer/rardecode
+Copyright (c) 2015 Nicholas Waples
+Licensed under BSD-2 License
+----------
+github.com/pierrec/lz4
+Copyright (c) 2015 Pierre Curto
+Licensed under BSD-3 License
+----------
+github.com/pkg/errors
+github.com/pkg/profile
+Copyright (c) Dave Cheney <dave@cheney.net>
+Licensed under BSD-2 License
+----------
+github.com/pytimer/win-netstat
+Copyright (c) 2018 pytimer
+Licensed under MIT License
+----------
+github.com/sebdah/goldie
+Copyright 2016 Sebastian Dahlgren <sebastian.dahlgren@gmail.com>
+Licensed under MIT License
+----------
+github.com/shirou/gopsutil
+github.com/shirou/gopsutil/v3
+Copyright (c) 2014 WAKAYAMA Shirou
+Copyright (c) 2009 The Go Authors
+Licensed under BSD License
+----------
+github.com/smartystreets/goconvey
+github.com/smartystreets/assertions
+Copyright (c) 2016 SmartyStreets, LLC
+Licensed under MIT License
+----------
+github.com/spf13/cobra
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/spf13/pflag
+Copyright (c) 2012 Alex Ogier
+Copyright (c) 2012 The Go Authors
+Licensed under BSD-3 License
+----------
+github.com/stretchr/testify
+Copyright (c) 2012-2018 Mat Ryer and Tyler Bunnell
+Licensed under MIT License
+----------
+github.com/xi2/xz
+(no license and copyright notes found)
+----------
+go.uber.org/atomic
+go.uber.org/multierr
+Copyright (c) 2016-2017 Uber Technologies, Inc.
+Licensed under MIT License
+----------
+go.uber.org/zap
+Copyright (c) 2016-2017 Uber Technologies, Inc.
+Licensed under MIT License
+----------
+golang.org/x/arch
+golang.org/x/crypto
+golang.org/x/sys
+golang.org/x/exp
+golang.org/x/net
+golang.org/x/oauth2
+golang.org/x/term
+golang.org/x/text
+golang.org/x/time
+golang.org/x/tools
+golang.org/x/sync
+Copyright (c) 2009 The Go Authors
+Licensed under BSD-3 License
+----------
+gopkg.in/ini.v1
+Copyright (c) 2014 Unknwon
+Licensed under Apache License 2.0
+----------
+gopkg.in/natefinch/npipe.v2
+Copyright (c) 2013 npipe authors
+Licensed under MIT License
+----------
+gopkg.in/yaml.v2
+gopkg.in/yaml.v3
+github.com/Velocidex/yaml/v2
+Copyright 2011-2016 Canonical Ltd.
+Licensed under Apache License 2.0
+----------
+howett.net/plist
+Copyright (c) 2013, Dustin L. Howett
+Copyright (c) 2012 The Go Authors
+Licensed under BSD-3 License
+----------
+github.com/williballenthin/shellbags
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+go.opencensus.io
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+cloud.google.com/go
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/chzyer/logex
+github.com/chzyer/readline
+github.com/chzyer/test
+Copyright (c) 2015 Chzyer
+Licensed under MIT License
+----------
+github.com/ianlancetaylor/demangle
+Copyright (c) 2015 The Go Authors
+Licensed under BSD-3 License
+----------
+github.com/jstemmer/go-junit-report
+Copyright (c) 2012 Joel Stemmer
+Licensed under MIT License
+----------
+google.golang.org/api
+google.golang.org/appengine
+google.golang.org/genproto
+google.golang.org/grpc
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/golang/protobuf
+google.golang.org/protobuf
+Copyright (c) 2018 The Go Authors
+Licensed under BSD-3 License
+----------
+github.com/golang/groupcache
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/google/go-cmp
+Copyright (c) 2017 The Go Authors
+Licensed under BSD-3 License
+----------
+https://github.com/hasherezade/pe-sieve
+Copyright (c) 2017-2020, @hasherezade
+Licensed under BSD 2-Clause License
+----------
+https://github.com/hasherezade/libpeconv
+Copyright (c) 2017-2019, hasherezade (@hasherezade)
+Licensed under BSD 2-Clause License
+----------
+github.com/parsiya/golnk
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/olekukonko/tablewriter
+Copyright (C) 2014 by Oleku Konko
+Licensed under MIT License
+----------
+github.com/frankban/quicktest
+Copyright (c) 2017 Canonical Ltd.
+Licensed under MIT License
+----------
+github.com/niemeyer/pretty
+Copyright 2012 Keith Rarick
+Licensed under MIT License
+----------
+github.com/prometheus/procfs
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/secDre4mer/beats/v7
+github.com/elastic/beats/v7
+Licensed by Elasticsearch B.V.
+Licensed under Apache License 2.0
+----------
+github.com/ulikunitz/xz
+Copyright (c) 2014-2020  Ulrich Kunitz
+Licensed under BSD 2-Clause "Simplified" License
+----------
+go.elastic.co/ecszap
+Copyright 2020 Elastic and contributors
+Licensed under Apache License 2.0
+----------
+gopkg.in/check.v1
+Copyright (c) 2010-2013 Gustavo Niemeyer <gustavo@niemeyer.net>
+Licensed under BSD 2-Clause "Simplified" License
+----------
+github.com/gopherjs/gopherjs
+Copyright (c) 2013 Richard Musiol
+Licensed under BSD 2-Clause "Simplified" License
+----------
+github.com/kr/text
+Copyright 2012 Keith Rarick
+Licensed under MIT License
+----------
+github.com/gobuffalo/envy
+github.com/gobuffalo/packr
+github.com/gobuffalo/packr/v2
+Copyright (c) 2016 Mark Bates
+Licensed under MIT License
+----------
+github.com/karrick/godirwalk
+Copyright (c) 2017, Karrick McDermott
+Licensed under BSD 2-Clause License
+----------
+github.com/rogpeppe/go-internal
+Copyright (c) 2018 The Go Authors
+Licensed under BSD 3-Clause "New" License
+----------
+github.com/sirupsen/logrus
+Copyright (c) 2014 Simon Eskildsen
+Licensed under MIT License
+----------
+github.com/Workiva/go-datastructures
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/swagger-api/swagger-ui
+Copyright 2020 SmartBear Software Inc.
+Licensed under Apache License 2.0
+----------
+github.com/cheggaaa/pb/v3
+Copyright (c) 2012-2015, Sergey Cherepanov
+Licensed under BSD 3-Clause "New" License
+----------
+github.com/magefile/mage
+Copyright 2017 the Mage authors
+Licensed under Apache License 2.0
+----------
+github.com/secDre4mer/go-parseflags
+(no copyright notes found)
+Licensed under BSD 3-Clause "New" License
+----------
+github.com/secDre4mer/go-inject
+Copyright (c) 2021 secDre4mer
+Licensed under MIT License
+----------
+github.com/tklauser/go-sysconf
+Copyright (c) 2018-2021, Tobias Klauser
+Licensed under BSD 3-Clause "New" License
+----------
+github.com/bi-zone/etw
+github.com/secDre4mer/etw
+Copyright (c) 2020 BI.ZONE
+Licensed unter MIT License
+----------
+github.com/cespare/xxhash/v2
+Copyright (c) 2016 Caleb Spare
+Licensed unter MIT License
+----------
+github.com/tklauser/numcpus
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/VividCortex/ewma
+Copyright (c) 2013 VividCortex
+Licensed unter MIT License
+----------
+github.com/davecgh/go-spew
+Copyright (c) 2012-2016 Dave Collins <dave@davec.name>
+Licensed under ISC License
+----------
+github.com/hbollon/go-edlib
+Copyright (c) 2020 Hugo Bollon
+Licensed unter MIT License
+----------
+github.com/gonutz/w32/v2
+Copyright (c) 2021 gonutz
+Licensed under MIT License
+----------
+github.com/rivo/uniseg
+Copyright (c) 2019 Oliver Kuederle
+Licensed under MIT License
+----------
+github.com/Velocidex/pkcs7
+go.mozilla.org/pkcs7
+Copyright (c) 2015 Andrew Smith
+Licensed under MIT License
+----------
+github.com/VirusTotal/gyp
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/Velocidex/json
+Copyright (c) 2009 The Go Authors
+Licensed under BSD-3 License
+----------
+github.com/secDre4mer/go-cab
+Copyright (c) 2022 secDre4mer
+Licensed under MIT License
+----------
+github.com/bodgit/sevenzip
+Copyright (c) 2020, Matt Dainty
+Licensed under BSD-3 License
+----------
+github.com/klauspost/compress
+Copyright (c) 2012 The Go Authors. All rights reserved.
+Copyright (c) 2019 Klaus Post. All rights reserved.
+Licensed under Apache License 2.0, MIT License, or BSD-3 License, depending on path
+----------
+github.com/bodgit/plumbing
+Copyright (c) 2019, Matt Dainty
+Licensed under BSD-3 License
+----------
+github.com/bodgit/plumbing
+Copyright (c) 2019, Matt Dainty
+Licensed under BSD-3 License
+----------
+github.com/connesc/cipherio
+Copyright (c) 2020, Cédric Connes
+Licensed under MIT License
+----------
+github.com/andybalholm/brotli
+Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors
+Licensed under MIT License
+----------
+github.com/bodgit/windows
+Copyright (c) 2020, Matt Dainty
+Licensed under BSD-3 License
+----------
+go4.org/readerutil
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/secDre4mer/go-ionice
+Copyright (c) 2022 secDre4mer
+Licensed under MIT License
+----------
+github.com/Velocidex/oleparse
+www.velocidex.com/golang/oleparse
+Copyright (c) 2014 John William Davison
+Copyright (c) 2019 Michael Cohen Velocidex Innovations
+Licensed under MIT License
+----------
+github.com/VirusTotal/vt-go
+(no copyright notes found)
+Licensed under Apache License 2.0
+----------
+github.com/thedevsaddam/gojsonq
+Copyright (c) 2018 Saddam H thedevsaddam@gmail.com
+Licensed under MIT License
+----------
+github.com/felixge/fgprof
+Copyright © 2020 Felix Geisendörfer <felix@felixge.de>
+Licensed under MIT License
+----------
+github.com/ianlancetaylor/cgosymbolizer
+Copyright (c) 2015 The Go Authors. All rights reserved.
+Licensed under BSD-3 License
