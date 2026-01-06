@@ -69,6 +69,7 @@ Start-Process -FilePath $KapeExe -ArgumentList $KapeArgs -Wait -NoNewWindow
   - `--nocsv`: Text-only output (no CSV generation)
   - `--utc`: Timestamps in UTC
   - `--nothordb`: Skip ThorDB online lookup (offline mode)
+- **Log file flag**: `-l "path\to\thor.txt"` ⚠️ NOT `--output` (unsupported)
 - Uses `start /wait` in batch for synchronous execution
 - Remote mode uses `Start-Process -Wait -NoNewWindow`
 - Output directory contains: `thor.txt`, `thor-summary.txt`, and optional JSON logs
@@ -87,8 +88,12 @@ Start-Process -FilePath $KapeExe -ArgumentList $KapeArgs -Wait -NoNewWindow
 The agent uses **environment variable authentication** pattern (Cerberus_Agent.ps1:67):
 ```powershell
 $env:MC_HOST_cerberus = "https://${ACCESS_KEY}:${SECRET_KEY}@${MINIO_SERVER}"
-& $MinioExe put "$FilePath" "cerberus\$UPLOAD_BUCKET" --insecure
+# For directories (auto-detected with Test-Path):
+& $MinioExe cp --recursive "$FilePath" "cerberus/$UPLOAD_BUCKET/" --insecure
+# For files:
+& $MinioExe cp "$FilePath" "cerberus/$UPLOAD_BUCKET/" --insecure
 ```
+⚠️ **Note:** Use `mc cp` (NOT `mc put`). Directories require `--recursive` flag.
 
 **Upload Logic Flow:**
 1. Tool execution completes and saves to `Evidence\<hostname>-<tool>`
