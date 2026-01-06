@@ -63,16 +63,11 @@ function Upload-To-MinIO ($FilePath) {
 
     Write-Log "[UPLOAD] Starting MinIO Upload for: $FilePath"
 
-    # Configure MinIO Host (Environment Variable Method)
-    $env:MC_HOST_cerberus = "https://${ACCESS_KEY}:${SECRET_KEY}@${MINIO_SERVER}"
+    # Configure MinIO Host (Environment Variable Method - matching working KAPE script)
+    $env:MC_HOST_minio = "https://${ACCESS_KEY}:${SECRET_KEY}@${MINIO_SERVER}"
 
-    # Upload (use cp with recursive for directories, cp for files)
-    if (Test-Path $FilePath -PathType Container) {
-        & $MinioExe cp --recursive "$FilePath" "cerberus/$UPLOAD_BUCKET/" --insecure
-    }
-    else {
-        & $MinioExe cp "$FilePath" "cerberus/$UPLOAD_BUCKET/" --insecure
-    }
+    # Upload (using 'put' command - matching working KAPE script)
+    & $MinioExe put "$FilePath" "minio\$UPLOAD_BUCKET" --insecure
 
     if ($LASTEXITCODE -eq 0) {
         Write-Log "[SUCCESS] Upload Complete: $FilePath"
