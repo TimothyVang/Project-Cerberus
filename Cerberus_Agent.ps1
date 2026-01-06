@@ -60,15 +60,20 @@ function Upload-To-MinIO ($FilePath) {
         Write-Log "[ERROR] MinIO Client (mc.exe) not found at: $MinioExe"
         return
     }
-    
+
     Write-Log "[UPLOAD] Starting MinIO Upload for: $FilePath"
-    
+
     # Configure MinIO Host (Environment Variable Method)
     $env:MC_HOST_cerberus = "https://${ACCESS_KEY}:${SECRET_KEY}@${MINIO_SERVER}"
-    
-    # Upload
-    & $MinioExe put "$FilePath" "cerberus\$UPLOAD_BUCKET" --insecure
-    
+
+    # Upload (use cp with recursive for directories, cp for files)
+    if (Test-Path $FilePath -PathType Container) {
+        & $MinioExe cp --recursive "$FilePath" "cerberus/$UPLOAD_BUCKET/" --insecure
+    }
+    else {
+        & $MinioExe cp "$FilePath" "cerberus/$UPLOAD_BUCKET/" --insecure
+    }
+
     if ($LASTEXITCODE -eq 0) {
         Write-Log "[SUCCESS] Upload Complete: $FilePath"
     }
@@ -95,7 +100,8 @@ else {
         
         # Args from Config
         $ThorArgs = $Config.Tools.Thor.Args
-        Start-Process -FilePath $ThorExe -ArgumentList "--output `"$ThorOutput`" $ThorArgs" -Wait -NoNewWindow
+        $ThorLogFile = "$ThorOutput\thor.txt"
+        Start-Process -FilePath $ThorExe -ArgumentList "-l `"$ThorLogFile`" $ThorArgs" -Wait -NoNewWindow
         
         Write-Log "Thor Scan Finished."
     }
