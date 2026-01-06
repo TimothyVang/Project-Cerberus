@@ -100,8 +100,9 @@ else {
         
         # Args from Config
         $ThorArgs = $Config.Tools.Thor.Args
-        $ThorLogFile = "$ThorOutput\thor.txt"
-        Start-Process -FilePath $ThorExe -ArgumentList "-l `"$ThorLogFile`" $ThorArgs" -Wait -NoNewWindow
+        $ThorLogFile = "$ThorOutput\$env:COMPUTERNAME.txt"
+        $ThorHtmlFile = "$ThorOutput\$env:COMPUTERNAME.html"
+        Start-Process -FilePath $ThorExe -ArgumentList "--logfile `"$ThorLogFile`" --htmlfile `"$ThorHtmlFile`" $ThorArgs" -Wait -NoNewWindow
         
         Write-Log "Thor Scan Finished."
     }

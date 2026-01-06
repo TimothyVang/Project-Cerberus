@@ -125,8 +125,8 @@ if "%MChoice%"=="2" (
     
     if not exist "%EVIDENCE%\%COMPUTERNAME%_THOR" mkdir "%EVIDENCE%\%COMPUTERNAME%_THOR"
     
-    :: Arguments from Thor-Automated-Scan.ps1: --nocsv --utc --nothordb
-    start /wait "" "%BIN%\THOR\thor64-lite.exe" --output "%EVIDENCE%\%COMPUTERNAME%_THOR" --nocsv --utc --nothordb
+    :: Arguments: --utc --nothordb (removed --nocsv to enable CSV output)
+    start /wait "" "%BIN%\THOR\thor64-lite.exe" --logfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt" --htmlfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html" --utc --nothordb
     
     echo.
     echo [SUCCESS] THOR Finished. Press key to continue...

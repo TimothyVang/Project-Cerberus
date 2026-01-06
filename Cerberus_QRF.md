@@ -71,3 +71,46 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 ## Configuration Note
 *   **MinIO Credentials**: configured in `Cerberus_Config.json`.
 *   **Tool Arguments**: Configurable in `Cerberus_Config.json`.
+
+---
+
+## Troubleshooting Common Command Errors
+
+### THOR: "unknown flag: --output"
+**Problem:** THOR doesn't support `--output` flag.
+
+**Solution:**
+```bash
+# ❌ Wrong
+thor64-lite.exe --output "C:\Evidence\output"
+
+# ✅ Correct (with HTML reports)
+thor64-lite.exe --logfile "C:\Evidence\output\thor.txt" --htmlfile "C:\Evidence\output\thor.html"
+
+# ✅ Correct (text log only)
+thor64-lite.exe --logfile "C:\Evidence\output\thor.txt"
+```
+
+### THOR: No HTML reports generated
+**Problem:** Missing `--htmlfile` flag.
+
+**Solution:**
+```bash
+# Add --htmlfile flag with output file path
+thor64-lite.exe --logfile "log.txt" --htmlfile "C:\Evidence\THOR_Reports\report.html"
+```
+
+### MinIO: "Invalid arguments provided"
+**Problem:** Wrong MinIO client command or missing flags.
+
+**Solution:**
+```powershell
+# ❌ Wrong
+mc put "Evidence\folder" "cerberus/upload"
+
+# ✅ Correct (for directory)
+mc cp --recursive "Evidence\folder" "cerberus/upload/" --insecure
+
+# ✅ Correct (for file)
+mc cp "Evidence\file.zip" "cerberus/upload/" --insecure
+```

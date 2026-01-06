@@ -7,7 +7,7 @@
     },
     "Tools": {
         "Thor": {
-            "Args": "--nocsv --utc --nothordb"
+            "Args": "--utc --nothordb"
         },
         "Kape": {
             "TriageArgs": "--tsource C: --tdest ${Output} --tflush --target !SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --ifw --vhdx TargetsOutput_%m --zpw NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk=",

@@ -56,4 +56,35 @@ Open `Cerberus_Config.json` in a text editor to set your MinIO credentials and t
 *   **FTK**:  `powershell -ExecutionPolicy Bypass -File "...\Cerberus_Agent.ps1" -Tool FTK`
 
 ---
+
+## Command Reference
+
+**THOR Scan:**
+```batch
+# Local Mode (with HTML reports)
+Bin\THOR\thor64-lite.exe --logfile "Evidence\%COMPUTERNAME%\thor.txt" --htmlfile "Evidence\%COMPUTERNAME%\thor.html" --utc --nothordb
+
+# Remote Mode (via Agent)
+powershell -ExecutionPolicy Bypass -File "Cerberus_Agent.ps1" -Tool THOR
+```
+
+**THOR Output Files:**
+- `COMPUTERNAME.txt` - Text log file
+- `COMPUTERNAME.html` - HTML report
+- `*.csv` - CSV data files
+
+**MinIO Upload (Remote Mode):**
+```powershell
+# Upload directory
+mc cp --recursive "Evidence\HOSTNAME-THOR" "cerberus/upload/" --insecure
+
+# Upload file
+mc cp "Evidence\file.zip" "cerberus/upload/" --insecure
+```
+
+**Important Flags:**
+- THOR: Use `--logfile` and `--htmlfile` (NOT `--output`)
+- MinIO: Use `mc cp` command (NOT `mc put`)
+
+---
 *See `Project_Cerberus_User_Guide.md` for a detailed visual field manual.*

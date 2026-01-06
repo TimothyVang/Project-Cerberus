@@ -119,4 +119,45 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 *   **XP/2003 Crashes**: Ensure you are using the **Legacy Menu** (Option 2).
 
 ---
+
+## 5. Command Reference
+
+### THOR Flags (Correct Usage)
+```bash
+# ✅ CORRECT - Log file output with HTML reports
+--logfile "path\to\thor.txt" --htmlfile "path\to\thor.html"
+
+# ✅ CORRECT - Log file only (no HTML)
+--logfile "path\to\thor.txt"
+
+# ❌ INCORRECT - Unsupported flag
+--output "path\to\folder"
+```
+
+**THOR Output Flags:**
+- `--logfile "file.txt"` - Text log file location (required)
+- `--htmlfile "file.html"` - HTML report output (optional, recommended)
+- `--nocsv` - Disable CSV output (remove this flag to generate CSV files)
+
+### MinIO Upload Commands (Correct Usage)
+```powershell
+# ✅ CORRECT - Upload directory
+mc cp --recursive "C:\Evidence\HOSTNAME-THOR" "cerberus/upload/" --insecure
+
+# ✅ CORRECT - Upload single file
+mc cp "C:\Evidence\file.zip" "cerberus/upload/" --insecure
+
+# ❌ INCORRECT - Wrong command
+mc put "file" "bucket"  # 'put' is not a valid mc command
+```
+
+### Common Issues
+**"unknown flag: --output" (THOR)**
+- Fix: Change `--output` to `--logfile "path\to\logfile.txt"`
+
+**"Invalid arguments" (MinIO)**
+- Fix: Change `mc put` to `mc cp`
+- Fix: Add `--recursive` flag for directories
+
+---
 *Project Cerberus SOP v2.1 - Verified Jan 2026*
