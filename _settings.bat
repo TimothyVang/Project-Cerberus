@@ -13,7 +13,8 @@ set "KAPE_MODULES=^!EZParser"
 
 :: [THOR Settings]
 :: Arguments for Malware Scan (Option 2)
-set "THOR_ARGS=--nocsv --utc --nothordb"
+:: Removed --nocsv to enable CSV output
+set "THOR_ARGS=--utc --nothordb"
 
 :: [FTK Settings]
 :: Arguments for Disk Image (Legacy Option 2)

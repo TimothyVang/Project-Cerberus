@@ -53,26 +53,27 @@ Logs/                 # Operation logs
 - Password protection via `--zpw NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk=` (Base64-encoded password)
 - RAM capture uses `--module MagnetForensics_RAMCapture` with `--zm true` (zip module output)
 
-**Batch vs PowerShell KAPE invocation:**
+**Batch vs PowerShell invocation examples:**
 ```batch
-# Batch (Cerberus_Launcher.bat line 113)
-"%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE" --tflush --target %KAPE_TARGETS% --module ^!EZParser --gui
+# Batch THOR (Cerberus_Launcher.bat line 129)
+thor64-lite.exe --logfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt" --htmlfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html" --utc --nothordb
 ```
 ```powershell
-# PowerShell (Cerberus_Agent.ps1 line 110-112)
-$KapeArgs = $Config.Tools.Kape.TriageArgs -replace "\$\{Output\}", "`"$KapeOutput`""
-Start-Process -FilePath $KapeExe -ArgumentList $KapeArgs -Wait -NoNewWindow
+# PowerShell THOR (Cerberus_Agent.ps1 line 105)
+Start-Process -FilePath $ThorExe -ArgumentList "--logfile `"$ThorLogFile`" --htmlfile `"$ThorHtmlFile`" $ThorArgs" -Wait -NoNewWindow
 ```
 
 **THOR** (Threat Hunting Scanner):
-- Arguments: `--nocsv --utc --nothordb`
-  - `--nocsv`: Text-only output (no CSV generation)
+- Arguments: `--utc --nothordb` (removed `--nocsv` to enable CSV output)
   - `--utc`: Timestamps in UTC
   - `--nothordb`: Skip ThorDB online lookup (offline mode)
-- **Log file flag**: `-l "path\to\thor.txt"` ⚠️ NOT `--output` (unsupported)
+- **Output flags**:
+  - `--logfile "path\to\thor.txt"` - Text log output (required)
+  - `--htmlfile "path\to\thor.html"` - HTML report output (recommended)
+  - ⚠️ NOT `--output` (unsupported flag)
 - Uses `start /wait` in batch for synchronous execution
 - Remote mode uses `Start-Process -Wait -NoNewWindow`
-- Output directory contains: `thor.txt`, `thor-summary.txt`, and optional JSON logs
+- Output directory contains: `COMPUTERNAME.txt`, `COMPUTERNAME.html`, CSV files, and summary reports
 
 **FTK Imager**:
 - Target: `\\.\PhysicalDrive0` (raw disk access via Windows device namespace)
