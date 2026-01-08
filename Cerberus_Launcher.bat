@@ -58,14 +58,36 @@ cls
 echo.
 color 0B
 echo   =========================================================================
-echo    .d8888b.                    888                                   
-echo   d88P  Y88b                   888                                   
-echo   888    888                   888                                   
-echo   888        .d88b.  888d888   88888b.   .d88b.  888d888 888  888 .d8888b  
-echo   888       d8P  Y8b 888P"     888 "88b d8P  Y8b 888P"   888  888 88K      
-echo   888    888 88888888 888       888  888 88888888 888     888  888 "Y8888b. 
-echo   Y88b  d88P Y8b.     888       888 d88P Y8b.     888     Y88b 888      X88 
-echo    "Y8888P"   "Y8888  888       88888P"   "Y8888  888      "Y88888  88888P' 
+echo    .d8888b.                    888
+echo   d88P  Y88b                   888
+echo   888    888                   888
+echo   888        .d88b.  888d888   88888b.   .d88b.  888d888 888  888 .d8888b
+echo   888       d8P  Y8b 888P"     888 "88b d8P  Y8b 888P"   888  888 88K
+echo   888    888 88888888 888       888  888 88888888 888     888  888 "Y8888b.
+echo   Y88b  d88P Y8b.     888       888 d88P Y8b.     888     Y88b 888      X88
+echo    "Y8888P"   "Y8888  888       88888P"   "Y8888  888      "Y88888  88888P'
+echo   =========================================================================
+echo.
+echo            APT Scanner    Artifact         Disk Imager
+echo             (THOR)       Collector          (FTK)
+echo                          (KAPE)
+echo                ^^            ^^            ^^
+echo             .-"""-.       .-"""-.      .-"""-.
+echo            /  o o  \     /  o o  \    /  o o  \
+echo           (    ^    )   (    ^    )  (    ^    )
+echo            \  \_/  /     \  \_/  /    \  \_/  /
+echo             '-----'       '-----'      '-----'
+echo              \   \         \   \        /   /
+echo               \   \_________\   \______/   /
+echo                \                          /
+echo                 \    THE THREE-HEADED    /
+echo                  \    DFIR WATCHDOG      /
+echo                   \____________________/
+echo                          /    \
+echo                         /      \
+echo                        /        \
+echo   =========================================================================
+echo   Author: PUG  ^|  Project Cerberus DFIR Triage Kit
 echo   =========================================================================
 echo.
 echo    [ SYSTEM INFO ]
@@ -73,24 +95,35 @@ echo    Computer: %COMPUTERNAME%
 echo    User:     %USERNAME%
 for /f "tokens=*" %%i in ('ver') do set "OS_VERSION=%%i"
 echo    OS:       !OS_VERSION!
-echo. 
+echo.
 echo   +-----------------------------------------------------------------------+
-echo   ^|                        SELECT OPERATION MODE                          ^|
+echo   ^|                   WELCOME TO PROJECT CERBERUS                         ^|
+echo   ^|                        DFIR TRIAGE TOOLKIT                            ^|
 echo   +-----------------------------------------------------------------------+
-echo   ^|                                                                       ^|
-echo   ^|  [1] MODERN Triage      (Windows 10 / 11 / Server 2012+)              ^|
-echo   ^|      - Tools: KAPE, THOR (x64), FTK (x64)                             ^|
-echo   ^|                                                                       ^|
-echo   ^|  [2] LEGACY Triage      (Windows XP / Server 2003 / 2008)             ^|
-echo   ^|      - Tools: FTK 3.1.1, THOR Legacy                                  ^|
-echo   ^|      - SAFETY: Bypasses PowerShell to prevent crashes                 ^|
-echo   ^|                                                                       ^|
-echo   ^|  [Q] Quit                                                             ^|
-echo   ^|                                                                       ^|
+echo.
+echo   WHAT IS YOUR OPERATING SYSTEM?
+echo.
+echo   [1] MODERN System (Windows 10, 11, Server 2012 or newer)
+echo       ^^
+echo       ^|__ If your computer is from 2015 or later, choose this!
+echo       ^|__ Fast tools with advanced features
+echo       ^|__ Includes: KAPE (artifact collector), THOR (malware scanner),
+echo       ^|            FTK (disk imager)
+echo.
+echo   [2] LEGACY System (Windows XP, Server 2003, Server 2008, Vista)
+echo       ^^
+echo       ^|__ If your computer is OLD (before 2012), choose this!
+echo       ^|__ Safe low-priority tools that won't crash old systems
+echo       ^|__ Includes: FTK x86 (memory ^& disk imaging), THOR Lite x86
+echo.
+echo   [Q] Quit - Exit the program
+echo.
+echo   +-----------------------------------------------------------------------+
+echo   HOW TO USE: Type the number (1 or 2) and press ENTER
 echo   +-----------------------------------------------------------------------+
 echo.
 set "Choice="
-set /p "Choice=[?] Select Option: "
+set /p "Choice=[?] Enter your choice (1, 2, or Q): "
 
 if /I "!Choice!"=="1" goto MODERN_MODE
 if /I "!Choice!"=="2" goto LEGACY_MODE
@@ -107,23 +140,38 @@ echo   ========================================================================
 echo   [ MODERN TRIAGE MENU - Windows 10/11/Server 2012+ ]
 echo   ========================================================================
 echo.
-echo   1) KAPE - Forensic Artifact Collection
-echo      ^> Collects registry, logs, browser data, memory files
-echo      ^> Time: 5-30 minutes  ^| Space: 500MB - 5GB
+echo   CHOOSE A FORENSIC TOOL:
 echo.
-echo   2) THOR - Malware/APT Scanner
-echo      ^> Scans for malware, IOCs, APT artifacts
-echo      ^> Time: 1-4 hours     ^| Space: ~50MB
+echo   [1] KAPE - Quick Evidence Collection (RECOMMENDED FOR BEGINNERS)
+echo       ^^
+echo       ^|__ WHAT IT DOES: Collects important files for investigation
+echo       ^|__ COLLECTS: Registry hives, event logs, browser history,
+echo       ^|             prefetch files, scheduled tasks, and more
+echo       ^|__ TIME: 5-30 minutes  ^|  DISK SPACE NEEDED: 500MB - 5GB
+echo       ^|__ BEST FOR: Fast triage when you need evidence quickly
 echo.
-echo   3) FTK Imager - Full Disk/Memory Imaging
-echo      ^> Creates forensic images of disk or memory
-echo      ^> Time: 2-8 hours     ^| Space: 10GB - 100GB+
+echo   [2] THOR - Malware Scanner (Checks for viruses and hacking tools)
+echo       ^^
+echo       ^|__ WHAT IT DOES: Scans your entire system for malware
+echo       ^|__ FINDS: Viruses, ransomware, APT tools, rootkits, IOCs
+echo       ^|__ TIME: 1-4 hours  ^|  DISK SPACE NEEDED: ~50MB
+echo       ^|__ BEST FOR: Checking if system is compromised/infected
 echo.
-echo   B) Back to Main Menu
+echo   [3] FTK - Complete Disk or Memory Copy (For advanced users)
+echo       ^^
+echo       ^|__ WHAT IT DOES: Makes exact copy of hard drive or RAM
+echo       ^|__ CREATES: Forensic disk image or memory dump
+echo       ^|__ TIME: 2-8 hours  ^|  DISK SPACE NEEDED: 10GB - 100GB+
+echo       ^|__ BEST FOR: Deep forensic analysis, legal evidence
+echo       ^|__ WARNING: Takes LONG time and LOTS of space!
+echo.
+echo   [B] Back - Return to main menu
 echo.
 echo   ========================================================================
+echo   HOW TO USE: Type a number (1, 2, or 3) and press ENTER
+echo   ========================================================================
 set "MChoice="
-set /p "MChoice=[?] Select Tool: "
+set /p "MChoice=[?] Enter your choice: "
 
 if /I "!MChoice!"=="1" goto KAPE_MENU
 
@@ -188,29 +236,55 @@ goto MODERN_MODE
 cls
 echo.
 echo   ========================================================================
-echo   [ KAPE FORENSIC ARTIFACT COLLECTION ]
+echo   [ KAPE - EVIDENCE COLLECTOR ]
 echo   ========================================================================
 echo.
-echo   1) Quick Triage (!SANS_Triage)
-echo      ^> Registry hives, Event Logs, Prefetch, MFT, USN Journal
-echo      ^> Time: 5-10 min  ^| Space: 500MB - 2GB
+echo   WHAT KIND OF EVIDENCE DO YOU WANT TO COLLECT?
 echo.
-echo   2) Full Triage (Comprehensive Collection)
-echo      ^> Everything in Quick + IIS, Exchange, Memory Files, MOF, BITS
-echo      ^> Time: 15-30 min ^| Space: 2GB - 5GB
+echo   [1] Quick Collection (RECOMMENDED - Fast and Essential)
+echo       ^^
+echo       ^|__ WHAT IT COLLECTS: The most important evidence files
+echo       ^|__ INCLUDES: Registry files, Windows event logs, prefetch,
+echo       ^|             file system journal, user activity traces
+echo       ^|__ TIME: 5-10 minutes  ^|  SPACE: 500MB - 2GB
+echo       ^|__ BEST FOR: Quick incident response, most cases
 echo.
-echo   3) RAM Capture (Memory Dump)
-echo      ^> Live memory acquisition using MagnetRAM
-echo      ^> Time: 5-15 min  ^| Space: Equals your RAM size
+echo   [2] Full Collection (Everything + Server Files)
+echo       ^^
+echo       ^|__ WHAT IT COLLECTS: Everything from Quick + server logs
+echo       ^|__ INCLUDES: All Quick items PLUS IIS logs, Exchange data,
+echo       ^|             memory files, MOF files, BITS transfers
+echo       ^|__ TIME: 15-30 minutes  ^|  SPACE: 2GB - 5GB
+echo       ^|__ BEST FOR: Servers, comprehensive investigations
 echo.
-echo   4) Custom Targets (Advanced)
-echo      ^> Specify your own target list manually
+echo   [3] Disk-Only Collection (Files without RAM capture)
+echo       ^^
+echo       ^|__ WHAT IT COLLECTS: Same as Quick but NO memory files
+echo       ^|__ INCLUDES: Registry, event logs, prefetch, MFT, USN journal
+echo       ^|__ EXCLUDES: Memory/RAM files (pagefile, hiberfil, swapfile)
+echo       ^|__ TIME: 3-8 minutes  ^|  SPACE: 300MB - 1.5GB (smaller)
+echo       ^|__ BEST FOR: When you don't need memory analysis
 echo.
-echo   B) Back to Tools Menu
+echo   [4] RAM Memory Capture (Capture what's running NOW)
+echo       ^^
+echo       ^|__ WHAT IT DOES: Saves a copy of everything in RAM memory
+echo       ^|__ CAPTURES: Running programs, passwords in memory, malware
+echo       ^|__ TIME: 5-15 minutes  ^|  SPACE: Same size as your RAM
+echo       ^|__ BEST FOR: Catching malware in memory, volatile data
+echo       ^|__ EXAMPLE: If you have 8GB RAM, this creates an 8GB file
 echo.
+echo   [5] Custom Targets (For experts who know what they want)
+echo       ^^
+echo       ^|__ Lets you manually type which evidence types to collect
+echo       ^|__ Requires knowledge of KAPE target names
+echo.
+echo   [B] Back - Return to tools menu
+echo.
+echo   ========================================================================
+echo   HOW TO USE: Type a number (1-5) and press ENTER
 echo   ========================================================================
 set "KChoice="
-set /p "KChoice=[?] Select Collection Type: "
+set /p "KChoice=[?] Enter your choice: "
 
 if /I "!KChoice!"=="1" (
     cls
@@ -271,6 +345,45 @@ if /I "!KChoice!"=="2" (
 )
 
 if /I "!KChoice!"=="3" (
+    cls
+    echo.
+    echo   ====================================================================
+    echo   DISK-ONLY COLLECTION (No Memory Files)
+    echo   ====================================================================
+    echo.
+    echo   Collecting: !SANS_Triage (excluding MemoryFiles)
+    echo   Output: %EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly
+    echo.
+    echo   [INFO] This collects the same files as Quick Triage but
+    echo   [INFO] EXCLUDES large memory files (pagefile, hiberfil, swapfile)
+    echo   [INFO] This is faster and uses less disk space.
+    echo.
+    echo   ====================================================================
+    echo.
+    set /p "Confirm=Continue with Disk-Only collection? (Y/N): "
+    if /I not "!Confirm!"=="Y" goto KAPE_MENU
+
+    echo.
+    echo   [INFO] Starting KAPE collection...
+    echo   [INFO] KAPE GUI will open in a new window.
+    echo.
+
+    setlocal DisableDelayedExpansion
+    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly" --tflush --target !SANS_Triage --gui
+    endlocal
+
+    echo.
+    echo   ====================================================================
+    echo   [SUCCESS] Disk-Only Collection Complete!
+    echo   ====================================================================
+    echo.
+    echo   Evidence Location: %EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly
+    echo.
+    pause
+    goto KAPE_MENU
+)
+
+if /I "!KChoice!"=="4" (
     cls
     echo.
     echo   ====================================================================
@@ -370,24 +483,37 @@ goto KAPE_MENU
 cls
 echo.
 echo   ========================================================================
-echo   [ FTK IMAGER - FORENSIC ACQUISITION ]
+echo   [ FTK IMAGER - COMPLETE FORENSIC COPY TOOL ]
 echo   ========================================================================
 echo.
-echo   1) Disk Image (Logical Drive C:)
-echo      ^> Creates RAW disk image of C: drive
-echo      ^> Time: 2-8 hours    ^| Space: 20GB - 100GB+
-echo      ^> Output: Compressed, fragmented at 1TB
+echo   WARNING: These are ADVANCED tools that take a LONG time!
+echo            Only use if you know what you're doing.
 echo.
-echo   2) Memory Dump (Live RAM)
-echo      ^> Captures live physical memory
-echo      ^> Time: 5-15 minutes ^| Space: Equals RAM size
-echo      ^> Output: .mem file with minimal compression
+echo   [1] Disk Image - Make EXACT copy of entire C: drive
+echo       ^^
+echo       ^|__ WHAT IT DOES: Creates bit-for-bit copy of your hard drive
+echo       ^|__ CAPTURES: EVERYTHING on C: drive (deleted files too!)
+echo       ^|__ TIME: 2-8 hours  ^|  SPACE: 20GB - 100GB+ (huge file!)
+echo       ^|__ FILE FORMAT: RAW image, compressed, split into chunks
+echo       ^|__ BEST FOR: Legal evidence, deep forensics, deleted file recovery
+echo       ^|__ WARNING: This takes HOURS! Don't interrupt or turn off PC!
 echo.
-echo   B) Back to Tools Menu
+echo   [2] Memory Dump - Copy everything in RAM right NOW
+echo       ^^
+echo       ^|__ WHAT IT DOES: Captures snapshot of RAM memory
+echo       ^|__ CAPTURES: Running programs, open files, passwords in memory
+echo       ^|__ TIME: 5-15 minutes  ^|  SPACE: Same size as your RAM
+echo       ^|__ FILE FORMAT: .mem file with compression
+echo       ^|__ BEST FOR: Malware analysis, volatile data preservation
+echo       ^|__ EXAMPLE: 16GB RAM = creates 16GB memory dump file
 echo.
+echo   [B] Back - Return to tools menu
+echo.
+echo   ========================================================================
+echo   HOW TO USE: Type 1 or 2 and press ENTER (This takes a LONG time!)
 echo   ========================================================================
 set "FChoice="
-set /p "FChoice=[?] Select Acquisition Type: "
+set /p "FChoice=[?] Enter your choice: "
 
 if /I "!FChoice!"=="1" (
     cls
@@ -503,25 +629,45 @@ goto FTK_MENU
 cls
 echo.
 echo   ========================================================================
-echo   [ LEGACY MODE - Windows XP/Server 2003/2008 ]
+echo   [ LEGACY MODE - For OLD Computers (XP/2003/2008/Vista) ]
 echo   ========================================================================
 echo.
-echo   SAFETY NOTE: Legacy mode uses x86 binaries and low CPU priority
-echo   to prevent crashes on older systems.
+echo   IMPORTANT - PLEASE READ:
+echo   This mode uses SAFE tools designed for old, slow computers.
+echo   All tools run at LOW priority so your computer won't freeze or crash.
 echo.
-echo   1) Memory Capture (FTK x86)
-echo      ^> Captures live RAM using x86 FTK Imager
-echo      ^> Time: 10-20 min ^| Space: Equals RAM size
+echo   +----------------------------------------------------------------------+
+echo   ^|  WHAT MAKES THIS SAFE FOR OLD COMPUTERS:                            ^|
+echo   ^|  - Uses 32-bit (x86) programs that work on old systems              ^|
+echo   ^|  - Runs at LOW CPU priority (won't slow down your computer)         ^|
+echo   ^|  - No PowerShell required (old systems don't have it)               ^|
+echo   ^|  - Takes longer but won't crash your system                         ^|
+echo   +----------------------------------------------------------------------+
 echo.
-echo   2) Disk Image C: (FTK x86)
-echo      ^> Creates RAW disk image using x86 FTK Imager
-echo      ^> Time: 3-10 hours ^| Space: 20GB - 100GB+
+echo   [1] Memory Capture - Copy RAM (Safe for old systems)
+echo       ^^
+echo       ^|__ WHAT IT DOES: Captures what's in your computer's memory
+echo       ^|__ RUNS: FTK Imager x86 (32-bit version)
+echo       ^|__ TIME: 10-20 minutes (slower than modern mode)
+echo       ^|__ SPACE: Same size as your RAM (example: 2GB RAM = 2GB file)
+echo       ^|__ SAFETY: Runs at LOW priority - won't freeze your PC
 echo.
-echo   B) Back to Main Menu
+echo   [2] Disk Image - Copy entire C: drive (Takes MANY hours!)
+echo       ^^
+echo       ^|__ WHAT IT DOES: Makes complete copy of C: drive
+echo       ^|__ RUNS: FTK Imager x86 (32-bit version)
+echo       ^|__ TIME: 3-10 hours (depends on hard drive size)
+echo       ^|__ SPACE: 20GB - 100GB+ (needs LOTS of free space!)
+echo       ^|__ SAFETY: Runs at LOW priority - safe but SLOW
+echo       ^|__ WARNING: Do NOT turn off computer while running!
 echo.
+echo   [B] Back - Return to main menu
+echo.
+echo   ========================================================================
+echo   HOW TO USE: Type 1 or 2 and press ENTER
 echo   ========================================================================
 set "LChoice="
-set /p "LChoice=[?] Select Tool: "
+set /p "LChoice=[?] Enter your choice: "
 
 if /I "!LChoice!"=="1" (
     cls

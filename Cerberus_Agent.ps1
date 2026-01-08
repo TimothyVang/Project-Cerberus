@@ -175,40 +175,54 @@ function Test-MinIOConnectivity {
 # UPLOAD FUNCTION - Sends files/folders to MinIO server
 # =============================================================================
 function Upload-To-MinIO ($FilePath) {
-    # Step 1: Check if MinIO client exists
     if (-not (Test-Path $MinioExe)) {
-        Write-Log "MinIO Client (mc.exe) not found at: $MinioExe" "ERROR"
-        return  # Exit function early
+        Write-Log "[ERROR] MinIO Client (mc.exe) not found at: $MinioExe" "ERROR"
+        return $false
     }
 
-    Write-Log "Starting MinIO Upload for: $FilePath"
+    if (-not (Test-Path $FilePath)) {
+        Write-Log "[ERROR] File not found for upload: $FilePath" "ERROR"
+        return $false
+    }
 
-    # Step 2: Configure MinIO connection
-    # This sets an environment variable that mc.exe will use
+    # File size validation
+    if (Test-Path $FilePath -PathType Container) {
+        $fileSize = (Get-ChildItem $FilePath -Recurse -ErrorAction SilentlyContinue |
+            Measure-Object -Property Length -Sum).Sum
+    } else {
+        $fileSize = (Get-Item $FilePath).Length
+    }
+    $fileSizeMB = [math]::Round($fileSize / 1MB, 2)
+    Write-Log "[UPLOAD] File: $FilePath ($fileSizeMB MB)"
+
+    # Network pre-check
+    if (-not (Test-MinIOConnectivity -Server $MINIO_SERVER)) {
+        Write-Log "[UPLOAD] Skipping upload due to network failure" "ERROR"
+        Write-Log "[LOCAL] Evidence preserved at: $FilePath"
+        return $false
+    }
+
+    Write-Log "[UPLOAD] Starting upload to minio\$UPLOAD_BUCKET..."
+
+    # Configure MinIO host
     $env:MC_HOST_minio = "https://${ACCESS_KEY}:${SECRET_KEY}@${MINIO_SERVER}"
 
-    # Step 3: Upload (different command for files vs directories)
+    # Upload with proper path separator
     if (Test-Path $FilePath -PathType Container) {
-        # It's a directory - use recursive flag (-r)
-        # The & operator runs the external program
-        & $MinioExe put -r "$FilePath" "minio/$UPLOAD_BUCKET" --insecure
-    }
-    else {
-        # It's a single file - no -r flag needed
-        & $MinioExe put "$FilePath" "minio/$UPLOAD_BUCKET" --insecure
+        & $MinioExe put -r "$FilePath" "minio\$UPLOAD_BUCKET" --insecure
+    } else {
+        & $MinioExe put "$FilePath" "minio\$UPLOAD_BUCKET" --insecure
     }
 
-    # Step 4: Check if upload succeeded
-    # $LASTEXITCODE = exit code from the last program we ran
-    # 0 = success, anything else = error
     if ($LASTEXITCODE -eq 0) {
-        Write-Log "Upload Complete: $FilePath" "SUCCESS"
-    }
-    else {
-        Write-Log "Upload Failed for: $FilePath" "ERROR"
-        Write-Log "Check Network: Can you reach $MINIO_SERVER ?" "ERROR"
-        Write-Log "Check Config: Verify AccessKey/SecretKey in Cerberus_Config.json" "ERROR"
-        Write-Log "Local Copy Preserved: $FilePath" "INFO"
+        Write-Log "[SUCCESS] Upload complete: $FilePath ($fileSizeMB MB)" "SUCCESS"
+        return $true
+    } else {
+        Write-Log "[ERROR] Upload failed with exit code: $LASTEXITCODE" "ERROR"
+        Write-Log "[ERROR] Check network: Can you reach $MINIO_SERVER ?" "ERROR"
+        Write-Log "[ERROR] Check credentials in Cerberus_Config.json" "ERROR"
+        Write-Log "[LOCAL] Evidence preserved at: $FilePath"
+        return $false
     }
 }
 
@@ -352,29 +366,65 @@ else {
         $KapeExe = "$BinDir\KAPE\kape.exe"
         $KapeOutput = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage"
 
-        # Check if KAPE executable exists
-        if (-not (Test-Path $KapeExe)) { Write-Log "KAPE binary not found at $KapeExe" "ERROR"; exit 1 }
-
-        # Build arguments using PowerShell array syntax
-        # @ creates an array, each line is one argument
-        # This is cleaner and safer than building one long string
-        $KapeArgs = @(
-            '--tsource', 'C:'          # Source drive to collect from
-            '--tdest', $KapeOutput      # Destination folder for collected files
-            '--tflush'                  # Flush (copy) files immediately
-            '--target', '!SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS'  # Which artifacts to collect
-            '--ifw'                     # Ignore file write errors
-            '--vhdx', 'TargetsOutput_%m'  # Create VHDX virtual disk image
-            '--zpw', 'NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk='  # Zip password (base64 encoded)
-        )
-
-        # Execute KAPE and wait for completion
-        $kapeProcess = Start-Process -FilePath $KapeExe -ArgumentList $KapeArgs -PassThru -NoNewWindow -Wait
-
-        # Verify KAPE completed successfully
-        if ($kapeProcess.ExitCode -ne 0) {
-            Write-Log "KAPE Triage failed with exit code: $($kapeProcess.ExitCode)" "ERROR"
+        if (-not (Test-Path $KapeExe)) {
+            Write-Log "KAPE binary not found at $KapeExe" "ERROR"
+            $scriptSuccess = $false
+            $failedComponents += "KAPE-TRIAGE"
+            exit 1
         }
+
+        # Build arguments using config
+        $KapeArgs = $Config.Tools.Kape.TriageArgs -replace "\$\{Output\}", "`"$KapeOutput`""
+
+        Write-Log "[KAPE] Command: $KapeExe $KapeArgs"
+        Write-Log "[KAPE] Output: $KapeOutput"
+        Write-Log "[KAPE] Starting collection (15-30 minutes estimated)..."
+
+        # Start process
+        $kapeProcess = Start-Process -FilePath $KapeExe `
+            -ArgumentList $KapeArgs `
+            -PassThru -NoNewWindow
+
+        # Monitor with timeout (24 hours)
+        $timeout = 86400000  # 24 hours
+        $startTime = Get-Date
+
+        while (-not $kapeProcess.HasExited) {
+            $elapsed = (Get-Date) - $startTime
+
+            if ($elapsed.TotalMilliseconds -gt $timeout) {
+                Write-Log "[KAPE] Timeout after 24 hours - killing process" "ERROR"
+                $kapeProcess.Kill()
+                Write-Log "[ERROR] KAPE collection timeout" "ERROR"
+                $scriptSuccess = $false
+                $failedComponents += "KAPE-TRIAGE"
+                exit 1
+            }
+
+            $exited = $kapeProcess.WaitForExit(60000)
+
+            # Check output directory size as progress indicator
+            if (Test-Path $KapeOutput) {
+                $outputSize = (Get-ChildItem $KapeOutput -Recurse -ErrorAction SilentlyContinue |
+                    Measure-Object -Property Length -Sum).Sum
+                $sizeMB = [math]::Round($outputSize / 1MB, 2)
+                $elapsedMin = [math]::Round($elapsed.TotalMinutes, 1)
+                Write-Log "[KAPE] Progress: Collected $sizeMB MB (elapsed: $elapsedMin min)"
+            } else {
+                Write-Log "[KAPE] Running... (elapsed: $([math]::Round($elapsed.TotalMinutes, 1)) min)"
+            }
+        }
+
+        $exitCode = $kapeProcess.ExitCode
+
+        if ($exitCode -eq 0) {
+            Write-Log "[KAPE] Triage collection completed successfully" "SUCCESS"
+        } else {
+            Write-Log "[ERROR] KAPE exited with code: $exitCode (may be partial collection)" "ERROR"
+            $scriptSuccess = $false
+            $failedComponents += "KAPE-TRIAGE"
+        }
+
         Write-Log "KAPE Triage Finished."
     }
     # =============================================================================
@@ -385,25 +435,63 @@ else {
         $KapeExe = "$BinDir\KAPE\kape.exe"
         $KapeOutput = "$EvidenceDir\$env:COMPUTERNAME-RAM"
 
-        # Check if KAPE executable exists
-        if (-not (Test-Path $KapeExe)) { Write-Log "KAPE binary not found at $KapeExe" "ERROR"; exit 1 }
+        if (-not (Test-Path $KapeExe)) {
+            Write-Log "KAPE binary not found at $KapeExe" "ERROR"
+            $scriptSuccess = $false
+            $failedComponents += "KAPE-RAM"
+            exit 1
+        }
 
-        # Build arguments for RAM capture module
-        # RAM capture grabs the contents of memory (running processes, etc.)
-        $RamArgs = @(
-            '--msource', 'C:\'          # Module source (not used for RAM capture but required)
-            '--mdest', $KapeOutput       # Destination for memory dump
-            '--zm', 'true'               # Zip module output
-            '--module', 'MagnetForensics_RAMCapture'  # KAPE module for memory acquisition
-            '--zpw', 'NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk='  # Zip password
-        )
+        # Build arguments using config
+        $RamArgs = $Config.Tools.Kape.RamArgs -replace "\$\{Output\}", "`"$KapeOutput`""
 
-        # Execute KAPE RAM module
-        $ramProcess = Start-Process -FilePath $KapeExe -ArgumentList $RamArgs -PassThru -NoNewWindow -Wait
+        Write-Log "[KAPE-RAM] Command: $KapeExe $RamArgs"
+        Write-Log "[KAPE-RAM] Output: $KapeOutput"
+        Write-Log "[KAPE-RAM] Starting memory capture (5-15 minutes estimated)..."
 
-        # Verify RAM capture succeeded
-        if ($ramProcess.ExitCode -ne 0) {
-            Write-Log "KAPE RAM failed with exit code: $($ramProcess.ExitCode)" "ERROR"
+        # Start process
+        $ramProcess = Start-Process -FilePath $KapeExe `
+            -ArgumentList $RamArgs `
+            -PassThru -NoNewWindow
+
+        # Monitor with timeout (2 hours for RAM)
+        $timeout = 7200000  # 2 hours
+        $startTime = Get-Date
+
+        while (-not $ramProcess.HasExited) {
+            $elapsed = (Get-Date) - $startTime
+
+            if ($elapsed.TotalMilliseconds -gt $timeout) {
+                Write-Log "[KAPE-RAM] Timeout after 2 hours - killing process" "ERROR"
+                $ramProcess.Kill()
+                Write-Log "[ERROR] KAPE RAM timeout" "ERROR"
+                $scriptSuccess = $false
+                $failedComponents += "KAPE-RAM"
+                exit 1
+            }
+
+            $exited = $ramProcess.WaitForExit(60000)
+
+            # Check output directory size
+            if (Test-Path $KapeOutput) {
+                $outputSize = (Get-ChildItem $KapeOutput -Recurse -ErrorAction SilentlyContinue |
+                    Measure-Object -Property Length -Sum).Sum
+                $sizeMB = [math]::Round($outputSize / 1MB, 2)
+                $elapsedMin = [math]::Round($elapsed.TotalMinutes, 1)
+                Write-Log "[KAPE-RAM] Progress: Captured $sizeMB MB (elapsed: $elapsedMin min)"
+            } else {
+                Write-Log "[KAPE-RAM] Running... (elapsed: $([math]::Round($elapsed.TotalMinutes, 1)) min)"
+            }
+        }
+
+        $exitCode = $ramProcess.ExitCode
+
+        if ($exitCode -eq 0) {
+            Write-Log "[KAPE-RAM] Memory capture completed successfully" "SUCCESS"
+        } else {
+            Write-Log "[ERROR] KAPE RAM exited with code: $exitCode" "ERROR"
+            $scriptSuccess = $false
+            $failedComponents += "KAPE-RAM"
         }
 
         Write-Log "KAPE RAM Capture Finished."
@@ -416,20 +504,71 @@ else {
         $FtkExe = "$BinDir\FTK\x64\ftkimager.exe"
         $FtkImageBase = "$EvidenceDir\$env:COMPUTERNAME-Disk"
 
-        # Check if FTK executable exists
-        if (-not (Test-Path $FtkExe)) { Write-Log "FTK binary not found at $FtkExe" "ERROR"; exit 1 }
+        if (-not (Test-Path $FtkExe)) {
+            Write-Log "FTK binary not found at $FtkExe" "ERROR"
+            $scriptSuccess = $false
+            $failedComponents += "FTK"
+            exit 1
+        }
 
-        # Get FTK arguments from config (like --compress 9 --frag 1TB)
+        # Get FTK arguments from config
         $FtkArgs = $Config.Tools.FTK.Args
+        $FtkLogFile = "$EvidenceDir\$env:COMPUTERNAME-FTK.log"
 
-        # FTK creates a forensic image (exact copy) of the C: drive
-        # This takes a LONG time and uses a lot of disk space!
-        Write-Log "Acquiring C: drive to $FtkImageBase.raw..."
-        $ftkProcess = Start-Process -FilePath $FtkExe -ArgumentList "C: `"$FtkImageBase.raw`" $FtkArgs" -PassThru -NoNewWindow -Wait
+        Write-Log "[FTK] Command: $FtkExe C: `"$FtkImageBase.raw`" $FtkArgs"
+        Write-Log "[FTK] Output: $FtkImageBase.raw"
+        Write-Log "[FTK] Starting disk imaging (this may take 2-8 hours)..."
 
-        # Check if imaging succeeded
-        if ($ftkProcess.ExitCode -ne 0) {
-            Write-Log "FTK failed with exit code: $($ftkProcess.ExitCode)" "ERROR"
+        # Start process
+        $ftkProcess = Start-Process -FilePath $FtkExe `
+            -ArgumentList "C: `"$FtkImageBase.raw`" $FtkArgs" `
+            -PassThru -NoNewWindow
+
+        # Monitor with timeout (72 hours for large disks)
+        $timeout = 259200000  # 72 hours
+        $startTime = Get-Date
+        $lastImageSize = 0
+
+        while (-not $ftkProcess.HasExited) {
+            $elapsed = (Get-Date) - $startTime
+
+            if ($elapsed.TotalMilliseconds -gt $timeout) {
+                Write-Log "[FTK] Timeout after 72 hours - killing process" "ERROR"
+                $ftkProcess.Kill()
+                Write-Log "[ERROR] FTK imaging timeout" "ERROR"
+                $scriptSuccess = $false
+                $failedComponents += "FTK"
+                exit 1
+            }
+
+            $exited = $ftkProcess.WaitForExit(60000)
+
+            # Check image file size as progress indicator
+            $imageFiles = Get-ChildItem "$EvidenceDir\$env:COMPUTERNAME-Disk.raw*" -ErrorAction SilentlyContinue
+            if ($imageFiles) {
+                $totalSize = ($imageFiles | Measure-Object -Property Length -Sum).Sum
+                $sizeGB = [math]::Round($totalSize / 1GB, 2)
+                $elapsedMin = [math]::Round($elapsed.TotalMinutes, 1)
+
+                if ($totalSize -gt $lastImageSize) {
+                    Write-Log "[FTK] Progress: Image $sizeGB GB (elapsed: $elapsedMin min)"
+                    $lastImageSize = $totalSize
+                } else {
+                    Write-Log "[FTK] Still imaging... (elapsed: $elapsedMin min)"
+                }
+            } else {
+                Write-Log "[FTK] Running... (elapsed: $([math]::Round($elapsed.TotalMinutes, 1)) min)"
+            }
+        }
+
+        $exitCode = $ftkProcess.ExitCode
+
+        if ($exitCode -eq 0) {
+            Write-Log "[FTK] Disk imaging completed successfully" "SUCCESS"
+        } else {
+            Write-Log "[ERROR] FTK exited with code: $exitCode" "ERROR"
+            $scriptSuccess = $false
+            $failedComponents += "FTK"
         }
 
         Write-Log "FTK Acquisition Finished."
@@ -441,22 +580,34 @@ else {
     Write-Log "`n[PHASE] Auto-Uploading Evidence..."
 
     # Upload the correct folder based on which tool we ran
+    $uploadSuccess = $false
     if ($Tool -eq "THOR") {
-        Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-THOR"
+        $uploadSuccess = Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-THOR"
     }
     elseif ($Tool -eq "KAPE-TRIAGE") {
-        Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage"
+        $uploadSuccess = Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage"
     }
     elseif ($Tool -eq "KAPE-RAM") {
-        Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-RAM"
+        $uploadSuccess = Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-RAM"
     }
     elseif ($Tool -eq "FTK") {
         # FTK creates multiple files (image.raw, image.raw.001, etc.)
         # Get-ChildItem lists files in a directory
         # | ForEach-Object runs code for each file found
-        Get-ChildItem -Path "$EvidenceDir" -Filter "$env:COMPUTERNAME-Disk.*" | ForEach-Object {
-            Upload-To-MinIO -FilePath $_.FullName  # $_ = current file in the loop
+        $ftkFiles = Get-ChildItem -Path "$EvidenceDir" -Filter "$env:COMPUTERNAME-Disk.*"
+        foreach ($ftkFile in $ftkFiles) {
+            $result = Upload-To-MinIO -FilePath $ftkFile.FullName
+            if ($result) {
+                $uploadSuccess = $true
+            }
         }
+    }
+
+    # Track upload failures
+    if (-not $uploadSuccess) {
+        Write-Log "[WARN] Evidence upload failed - files preserved locally" "WARNING"
+        $scriptSuccess = $false
+        $failedComponents += "Upload"
     }
 }
 
@@ -472,6 +623,9 @@ Write-Log "Scanning for evidence to upload..."
 $EvidenceFiles = Get-ChildItem -Path $EvidenceDir -Recurse | Where-Object { $_.Name -match $env:COMPUTERNAME -and -not $_.PSIsContainer }
 
 if ($EvidenceFiles) {
+    $uploadedCount = 0
+    $failedCount = 0
+
     # Loop through each evidence file found
     foreach ($File in $EvidenceFiles) {
         # Compress large files to save bandwidth and storage
@@ -483,13 +637,26 @@ if ($EvidenceFiles) {
             # Compress-Archive creates a .zip file
             # -Force means "overwrite if zip already exists"
             Compress-Archive -Path $File.FullName -DestinationPath $ZipPath -Force
-            Upload-To-MinIO -FilePath $ZipPath
+            $result = Upload-To-MinIO -FilePath $ZipPath
 
             # Keep the original unzipped file locally (for persistence!)
+            if ($result) { $uploadedCount++ } else { $failedCount++ }
         }
         else {
             # File is small or already zipped - upload as-is
-            Upload-To-MinIO -FilePath $File.FullName
+            $result = Upload-To-MinIO -FilePath $File.FullName
+            if ($result) { $uploadedCount++ } else { $failedCount++ }
+        }
+    }
+
+    Write-Log "[UPLOAD] Uploaded $uploadedCount files, $failedCount failed"
+
+    # Track failures for final exit code
+    if ($failedCount -gt 0 -and $uploadedCount -eq 0) {
+        # All uploads failed
+        $scriptSuccess = $false
+        if ("Upload" -notin $failedComponents) {
+            $failedComponents += "Upload"
         }
     }
 }
@@ -498,4 +665,22 @@ else {
     Write-Log "[WARN] No evidence files found matching $env:COMPUTERNAME in $EvidenceDir"
 }
 
-Write-Log "Cerberus Agent Execution Complete."
+# =============================================================================
+# FINAL STATUS REPORTING AND EXIT CODES
+# =============================================================================
+Write-Log "`n=========================================="
+
+if ($scriptSuccess) {
+    Write-Log "CERBERUS AGENT EXECUTION COMPLETE - SUCCESS" "SUCCESS"
+    Write-Log "All operations completed successfully"
+    Write-Log "Evidence collected and uploaded to MinIO"
+    Write-Log "=========================================="
+    exit 0
+} else {
+    Write-Log "CERBERUS AGENT EXECUTION COMPLETE - WITH ERRORS" "ERROR"
+    Write-Log "Failed components: $($failedComponents -join ', ')" "ERROR"
+    Write-Log "Check logs above for detailed error information" "ERROR"
+    Write-Log "Evidence preserved locally in: $EvidenceDir" "ERROR"
+    Write-Log "=========================================="
+    exit 1
+}

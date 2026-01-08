@@ -1,0 +1,3 @@
+[2026-01-08 00:32:51.0157098 | INF] KAPE directory: C:\Users\newbi\Desktop\PUG Projects\Project Cerberus\Project_Cerberus_Kit\Bin\KAPE
+[2026-01-08 00:32:51.0202131 | INF] Command line:   --tsource C: --tdest C:\Users\newbi\Desktop\PUG Projects\Project Cerberus\Project_Cerberus_Kit\Evidence\DESKTOP-TS1J2H8_KAPE_Quick --tflush --target !SANS_Triage --gui 
+[2026-01-08 00:32:51.0207133 | INF] System info: Machine name: DESKTOP-TS1J2H8, 64-bit: true, User: newbi OS: "Windows10" (10.0.26200)
