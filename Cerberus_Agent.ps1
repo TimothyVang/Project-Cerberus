@@ -78,12 +78,87 @@ else {
 # Example: If script is at C:\Cerberus\Cerberus_Agent.ps1, then $PSScriptRoot = C:\Cerberus
 $ScriptRoot = $PSScriptRoot
 $BinDir = "$ScriptRoot\Bin"              # Where tools are stored (THOR, KAPE, etc.)
-$EvidenceDir = "$ScriptRoot\Evidence"    # Where collected evidence is saved
 $MinioExe = "$BinDir\MinIO\mc.exe"       # MinIO client for uploads
 
-# Create Evidence directory if it doesn't exist
-if (-not (Test-Path $EvidenceDir)) {
-    New-Item -ItemType Directory -Path $EvidenceDir -Force | Out-Null
+# =============================================================================
+# HELPER FUNCTIONS - Path Resolution & Zip Naming
+# =============================================================================
+
+# Resolve path templates with variable substitution
+function Resolve-PathTemplate {
+    param([string]$Template)
+
+    if (-not $Template) {
+        return $null
+    }
+
+    $resolved = $Template
+    $resolved = $resolved -replace '\$\{ScriptRoot\}', $ScriptRoot
+    $resolved = $resolved -replace '\$\{ComputerName\}', $env:COMPUTERNAME
+    $resolved = $resolved -replace '\$\{Domain\}', ($env:USERDNSDOMAIN -or 'WORKGROUP')
+
+    return $resolved
+}
+
+# Build zip filename with optional domain name
+function Get-ZipFileName {
+    param(
+        [string]$Tool,
+        [string]$Directory
+    )
+
+    $computerName = $env:COMPUTERNAME
+
+    # Check if domain naming is enabled in config
+    if ($Config.Naming.IncludeDomain) {
+        $domain = $env:USERDNSDOMAIN
+
+        if ($domain) {
+            # Domain-joined system: HOSTNAME-DOMAIN-Tool.zip
+            $zipName = "$computerName-$domain-$Tool.zip"
+        } else {
+            # Workgroup system: HOSTNAME-WORKGROUP-Tool.zip
+            $zipName = "$computerName-WORKGROUP-$Tool.zip"
+        }
+    } else {
+        # Default: HOSTNAME-Tool.zip
+        $zipName = "$computerName-$Tool.zip"
+    }
+
+    return Join-Path $Directory $zipName
+}
+
+# =============================================================================
+# EVIDENCE DIRECTORY SETUP (with Custom Path Support)
+# =============================================================================
+
+# Get evidence paths from config or use defaults
+if ($Config.Paths.EnableCustomPaths -and $Config.Paths.EvidenceRoot) {
+    $EvidenceDir = Resolve-PathTemplate $Config.Paths.EvidenceRoot
+    Write-Log "Using custom evidence path: $EvidenceDir"
+} else {
+    $EvidenceDir = "$ScriptRoot\Evidence"
+}
+
+# Special handling for FTK (large disk images)
+if ($Config.Paths.FTK) {
+    $FtkEvidenceDir = Resolve-PathTemplate $Config.Paths.FTK
+    Write-Log "Using custom FTK path: $FtkEvidenceDir"
+} else {
+    $FtkEvidenceDir = $EvidenceDir
+}
+
+# Ensure evidence directories exist
+foreach ($path in @($EvidenceDir, $FtkEvidenceDir) | Select-Object -Unique) {
+    if (-not (Test-Path $path)) {
+        try {
+            New-Item -ItemType Directory -Path $path -Force | Out-Null
+            Write-Log "Created evidence directory: $path" "SUCCESS"
+        } catch {
+            Write-Log "Failed to create directory $path : $($_.Exception.Message)" "ERROR"
+            exit 1
+        }
+    }
 }
 
 # =============================================================================
@@ -548,7 +623,7 @@ else {
     elseif ($Tool -eq "FTK") {
         Write-Log "Starting FTK Imager (Remote Mode)..."
         $FtkExe = "$BinDir\FTK\x64\ftkimager.exe"
-        $FtkImageBase = "$EvidenceDir\$env:COMPUTERNAME-Disk"
+        $FtkImageBase = "$FtkEvidenceDir\$env:COMPUTERNAME-Disk"
 
         if (-not (Test-Path $FtkExe)) {
             Write-Log "FTK binary not found at $FtkExe" "ERROR"
@@ -558,7 +633,7 @@ else {
         } else {
             # Get FTK arguments from config
             $FtkArgs = $Config.Tools.FTK.Args
-            $FtkLogFile = "$EvidenceDir\$env:COMPUTERNAME-FTK.log"
+            $FtkLogFile = "$FtkEvidenceDir\$env:COMPUTERNAME-FTK.log"
 
             Write-Log "[FTK] Command: $FtkExe C: `"$FtkImageBase.raw`" $FtkArgs"
             Write-Log "[FTK] Output: $FtkImageBase.raw"
@@ -589,7 +664,7 @@ else {
             $exited = $ftkProcess.WaitForExit(60000)
 
             # Check image file size as progress indicator
-            $imageFiles = Get-ChildItem "$EvidenceDir\$env:COMPUTERNAME-Disk.raw*" -ErrorAction SilentlyContinue
+            $imageFiles = Get-ChildItem "$FtkEvidenceDir\$env:COMPUTERNAME-Disk.raw*" -ErrorAction SilentlyContinue
             if ($imageFiles) {
                 $totalSize = ($imageFiles | Measure-Object -Property Length -Sum).Sum
                 $sizeGB = [math]::Round($totalSize / 1GB, 2)
@@ -632,23 +707,23 @@ else {
 
     if ($Tool -eq "THOR") {
         $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-THOR"
-        $zipPath = "$EvidenceDir\$env:COMPUTERNAME-THOR.zip"
+        $zipPath = Get-ZipFileName -Tool "THOR" -Directory $EvidenceDir
     }
     elseif ($Tool -eq "KAPE-TRIAGE") {
         $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage"
-        $zipPath = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage.zip"
+        $zipPath = Get-ZipFileName -Tool "KAPE-Triage" -Directory $EvidenceDir
     }
     elseif ($Tool -eq "KAPE-RAM") {
         $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-RAM"
-        $zipPath = "$EvidenceDir\$env:COMPUTERNAME-RAM.zip"
+        $zipPath = Get-ZipFileName -Tool "RAM" -Directory $EvidenceDir
     }
     elseif ($Tool -eq "FTK") {
         # FTK creates individual files, not a folder - zip them all together
         Write-Log "[ZIP] Compressing FTK disk image files..."
-        $ftkFiles = Get-ChildItem -Path "$EvidenceDir" -Filter "$env:COMPUTERNAME-Disk.*"
+        $ftkFiles = Get-ChildItem -Path "$FtkEvidenceDir" -Filter "$env:COMPUTERNAME-Disk.*"
 
         if ($ftkFiles) {
-            $zipPath = "$EvidenceDir\$env:COMPUTERNAME-FTK.zip"
+            $zipPath = Get-ZipFileName -Tool "FTK" -Directory $FtkEvidenceDir
 
             try {
                 Compress-Archive -Path $ftkFiles.FullName -DestinationPath $zipPath -Force
@@ -720,11 +795,24 @@ else {
 # =============================================================================
 Write-Log "Scanning for evidence to upload..."
 
-# Search Evidence directory for files matching this computer's name
-# -Recurse means "search subfolders too"
-# Where-Object filters the results
-# -match does pattern matching, -not means NOT, $_.PSIsContainer checks if it's a folder
-$EvidenceFiles = Get-ChildItem -Path $EvidenceDir -Recurse | Where-Object { $_.Name -match $env:COMPUTERNAME -and -not $_.PSIsContainer }
+# Search both evidence directories for files matching this computer's name
+# Build list of paths to search (avoid duplicates if FTK uses same path)
+$searchPaths = @($EvidenceDir)
+if ($FtkEvidenceDir -ne $EvidenceDir) {
+    $searchPaths += $FtkEvidenceDir
+    Write-Log "[INFO] Scanning both standard ($EvidenceDir) and FTK ($FtkEvidenceDir) directories"
+}
+
+$EvidenceFiles = @()
+foreach ($searchPath in $searchPaths) {
+    if (Test-Path $searchPath) {
+        # -Recurse means "search subfolders too"
+        # Where-Object filters the results
+        # -match does pattern matching, -not means NOT, $_.PSIsContainer checks if it's a folder
+        $EvidenceFiles += Get-ChildItem -Path $searchPath -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match $env:COMPUTERNAME -and -not $_.PSIsContainer }
+    }
+}
 
 if ($EvidenceFiles) {
     $uploadedCount = 0
