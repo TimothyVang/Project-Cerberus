@@ -1,0 +1,10 @@
+[2026-01-07 23:59:59.3258738 | INF] KAPE directory: C:\Users\newbi\Desktop\PUG Projects\Project Cerberus\Project_Cerberus_Kit\Bin\KAPE
+[2026-01-07 23:59:59.3303716 | INF] Command line:   --msource C:\ --mdest C:\Users\newbi\Desktop\PUG Projects\Project Cerberus\Project_Cerberus_Kit\Evidence\DESKTOP-TS1J2H8_RAM --zm true --module MagnetForensics_RAMCapture --gui 
+[2026-01-07 23:59:59.3308709 | INF] System info: Machine name: DESKTOP-TS1J2H8, 64-bit: true, User: newbi OS: "Windows10" (10.0.26200)
+[2026-01-07 23:59:59.6983710 | INF] Using Module operations
+[2026-01-07 23:59:59.7013714 | WRN]   Creating module destination directory C:\Users\newbi\Desktop\PUG Projects\Project Cerberus\Project_Cerberus_Kit\Evidence\DESKTOP-TS1J2H8_RAM
+[2026-01-07 23:59:59.7058725 | INF]     Found processor Executable: MRC.exe, Cmd line: /accepteula /go %destinationDirectory%\memory.raw /silent, Export: raw, Append: False!
+[2026-01-07 23:59:59.7068717 | INF] Discovered 1 processor to run
+[2026-01-07 23:59:59.7073716 | INF] Executing modules with file masks...
+[2026-01-07 23:59:59.7078716 | INF] Executing remaining modules...
+[2026-01-07 23:59:59.7088717 | INF]   Running MRC.exe: /accepteula /go "C:\Users\newbi\Desktop\PUG Projects\Project Cerberus\Project_Cerberus_Kit\Evidence\DESKTOP-TS1J2H8_RAM\Memory"\memory.raw /silent

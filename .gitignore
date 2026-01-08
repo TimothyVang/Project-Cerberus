@@ -1,5 +1,8 @@
 # Project Cerberus Ignore File
 
+# CRITICAL: Configuration with credentials
+Cerberus_Config.json
+
 # CRITICAL: Never upload Evidence or Logs
 Evidence/
 Logs/
@@ -12,6 +15,10 @@ debug_*.log
 # Editor Files
 .vscode/
 .idea/
+
+# Windows system files
+Thumbs.db
+desktop.ini
 
 # Large binaries (Optional - remove if you have LFS)
 # *.exe
