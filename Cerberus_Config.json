@@ -1,9 +1,17 @@
 {
     "MinIO": {
-        "Server": "10.1.15.173:8443",
-        "AccessKey": "GvQuT3V8NazepIaQfnlm",
-        "SecretKey": "ZEx4rJBa78hWGJyKQdxtraMVVTVeWEVnK4GWxR3t",
+        "Server": "your-minio-server:8443",
+        "AccessKey": "your-access-key-here",
+        "SecretKey": "your-secret-key-here",
         "Bucket": "upload"
+    },
+    "Paths": {
+        "EvidenceRoot": "${ScriptRoot}\\Evidence",
+        "FTK": "",
+        "EnableCustomPaths": false
+    },
+    "Naming": {
+        "IncludeDomain": false
     },
     "Tools": {
         "Thor": {
