@@ -231,7 +231,53 @@ function Upload-To-MinIO ($FilePath) {
 # =============================================================================
 if ($UploadOnly) {
     # User passed -UploadOnly flag, so skip scanning and just upload existing files
-    Write-Log "Upload-Only mode selected. Skipping scan."
+    Write-Log "[MODE] Upload-Only Mode - Scanning for existing evidence..."
+
+    # Scan Evidence folder for files matching this computer's name
+    $EvidenceFiles = Get-ChildItem -Path $EvidenceDir -Recurse -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match $env:COMPUTERNAME -and -not $_.PSIsContainer }
+
+    if ($EvidenceFiles) {
+        $uploadCount = 0
+        $failedCount = 0
+
+        Write-Log "[UPLOAD] Found $($EvidenceFiles.Count) evidence files to upload"
+
+        foreach ($File in $EvidenceFiles) {
+            # Compress large files before upload
+            if ($File.Extension -ne ".zip" -and $File.Length -gt 100MB) {
+                Write-Log "[INFO] Large file detected: $($File.Name) - compressing before upload..."
+                $ZipPath = "$($File.FullName).zip"
+
+                try {
+                    Compress-Archive -Path $File.FullName -DestinationPath $ZipPath -Force -ErrorAction Stop
+                    $result = Upload-To-MinIO -FilePath $ZipPath
+                    if ($result) { $uploadCount++ } else { $failedCount++ }
+                } catch {
+                    Write-Log "[ERROR] Failed to compress $($File.Name): $($_.Exception.Message)" "ERROR"
+                    $failedCount++
+                }
+            } else {
+                # Upload file as-is
+                $result = Upload-To-MinIO -FilePath $File.FullName
+                if ($result) { $uploadCount++ } else { $failedCount++ }
+            }
+        }
+
+        Write-Log "[UPLOAD] Upload complete: $uploadCount succeeded, $failedCount failed"
+
+        if ($failedCount -gt 0) {
+            Write-Log "[WARN] Some uploads failed - check network connectivity and credentials" "WARNING"
+            exit 1
+        } else {
+            Write-Log "[SUCCESS] All evidence uploaded successfully" "SUCCESS"
+            exit 0
+        }
+    } else {
+        Write-Log "[WARN] No evidence files found matching $env:COMPUTERNAME in $EvidenceDir" "WARNING"
+        Write-Log "[INFO] Ensure evidence was collected before running -UploadOnly mode"
+        exit 0  # Not an error, just nothing to upload
+    }
 }
 else {
     # =============================================================================
@@ -465,8 +511,8 @@ else {
                 $ramProcess.Kill()
                 Write-Log "[ERROR] KAPE RAM timeout" "ERROR"
                 $scriptSuccess = $false
-                $failedComponents += "KAPE-RAM"
-                exit 1
+                $failedComponents += "KAPE-RAM-Timeout"
+                break  # Exit monitoring loop but continue to upload phase
             }
 
             $exited = $ramProcess.WaitForExit(60000)
@@ -494,6 +540,7 @@ else {
         }
 
         Write-Log "KAPE RAM Capture Finished."
+        }  # End of else block for KAPE-RAM execution
     }
     # =============================================================================
     # TOOL EXECUTION - FTK IMAGER (Disk Imaging)
@@ -506,17 +553,16 @@ else {
         if (-not (Test-Path $FtkExe)) {
             Write-Log "FTK binary not found at $FtkExe" "ERROR"
             $scriptSuccess = $false
-            $failedComponents += "FTK"
-            exit 1
-        }
+            $failedComponents += "FTK-Missing"
+            # Skip FTK execution but continue to upload phase
+        } else {
+            # Get FTK arguments from config
+            $FtkArgs = $Config.Tools.FTK.Args
+            $FtkLogFile = "$EvidenceDir\$env:COMPUTERNAME-FTK.log"
 
-        # Get FTK arguments from config
-        $FtkArgs = $Config.Tools.FTK.Args
-        $FtkLogFile = "$EvidenceDir\$env:COMPUTERNAME-FTK.log"
-
-        Write-Log "[FTK] Command: $FtkExe C: `"$FtkImageBase.raw`" $FtkArgs"
-        Write-Log "[FTK] Output: $FtkImageBase.raw"
-        Write-Log "[FTK] Starting disk imaging (this may take 2-8 hours)..."
+            Write-Log "[FTK] Command: $FtkExe C: `"$FtkImageBase.raw`" $FtkArgs"
+            Write-Log "[FTK] Output: $FtkImageBase.raw"
+            Write-Log "[FTK] Starting disk imaging (this may take 2-8 hours)..."
 
         # Start process
         $ftkProcess = Start-Process -FilePath $FtkExe `
@@ -536,8 +582,8 @@ else {
                 $ftkProcess.Kill()
                 Write-Log "[ERROR] FTK imaging timeout" "ERROR"
                 $scriptSuccess = $false
-                $failedComponents += "FTK"
-                exit 1
+                $failedComponents += "FTK-Timeout"
+                break  # Exit monitoring loop but continue to upload phase
             }
 
             $exited = $ftkProcess.WaitForExit(60000)
@@ -571,6 +617,7 @@ else {
         }
 
         Write-Log "FTK Acquisition Finished."
+        }  # End of else block for FTK execution
     }
     
     # =============================================================================
