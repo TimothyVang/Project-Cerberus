@@ -1,4 +1,5 @@
 # CLAUDE.md
+**Project Cerberus Developer Documentation v2.2 - Updated January 2026**
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -55,11 +56,11 @@ Logs/                 # Operation logs
 
 **Batch vs PowerShell invocation examples:**
 ```batch
-# Batch THOR (Cerberus_Launcher.bat line 129)
+# Batch THOR (Cerberus_Launcher.bat)
 thor64-lite.exe --logfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt" --htmlfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html" --utc --nothordb
 ```
 ```powershell
-# PowerShell THOR (Cerberus_Agent.ps1 line 105)
+# PowerShell THOR (Cerberus_Agent.ps1 line 348-350)
 Start-Process -FilePath $ThorExe -ArgumentList "--logfile `"$ThorLogFile`" --htmlfile `"$ThorHtmlFile`" $ThorArgs" -Wait -NoNewWindow
 ```
 
@@ -87,34 +88,42 @@ Start-Process -FilePath $ThorExe -ArgumentList "--logfile `"$ThorLogFile`" --htm
 
 ### MinIO Upload Architecture
 
-The agent uses **environment variable authentication** pattern (Cerberus_Agent.ps1:67):
+The agent uses **environment variable authentication** pattern (Cerberus_Agent.ps1:208-215):
 ```powershell
 $env:MC_HOST_minio = "https://${ACCESS_KEY}:${SECRET_KEY}@${MINIO_SERVER}"
+
+# For directories
+& $MinioExe put -r "$FilePath" "minio\$UPLOAD_BUCKET" --insecure
+
+# For files
 & $MinioExe put "$FilePath" "minio\$UPLOAD_BUCKET" --insecure
 ```
-⚠️ **Note:** Use `mc put` command (matches working KAPE script pattern). Path uses backslash format.
+⚠️ **Note:** Agent uses `mc put -r` for directories and `mc put` for files. Path uses backslash format (`minio\bucket`) for Windows compatibility.
 
 **Upload Logic Flow:**
 1. Tool execution completes and saves to `Evidence\<hostname>-<tool>`
-2. Agent scans `Evidence\` for files matching `$env:COMPUTERNAME` pattern (line 171)
-3. Files >100MB are automatically zipped before upload (line 176-180):
-   ```powershell
-   if ($File.Extension -ne ".zip" -and $File.Length -gt 100MB) {
-       $ZipPath = "$($File.FullName).zip"
-       Compress-Archive -Path $File.FullName -DestinationPath $ZipPath -Force
-       Upload-To-MinIO -FilePath $ZipPath
-   }
-   ```
-4. Original evidence is **preserved locally** (no auto-deletion per forensic protocol)
-5. Upload failures are logged but don't delete local evidence
-6. Failed uploads can be retried with `-UploadOnly` switch without re-running collection
+2. **Primary compression phase** (lines 626-715):
+   - Entire evidence folder is compressed to .zip file
+   - Zip file is uploaded to MinIO automatically
+   - Original folder is preserved locally
+3. **Fallback upload scan** (lines 720-770):
+   - Scans for any remaining files matching `$env:COMPUTERNAME` pattern
+   - Files >100MB are zipped before upload
+   - Small files uploaded as-is
+4. **Forensic preservation**:
+   - Original evidence is **NEVER auto-deleted**
+   - Both original folder and zip remain on disk
+   - Upload failures are logged but don't trigger cleanup
+5. Failed uploads can be retried with `-UploadOnly` switch without re-collecting
 
 **Error Handling:**
-- Exit code checked via `$LASTEXITCODE -eq 0` (line 72)
-- Network failures log troubleshooting hints (lines 77-79):
-  - Can you ping the MinIO server?
+- Exit code checked via `$LASTEXITCODE -eq 0` (line 217)
+- Network pre-check with `Test-MinIOConnectivity` function (lines 136-168)
+- Network failures log troubleshooting hints (lines 222-224):
+  - Can you reach the MinIO server?
   - Are credentials correct in `Cerberus_Config.json`?
-  - Local copy preserved in Evidence folder
+  - Evidence preserved locally in Evidence folder
+- Script tracks failed components and returns appropriate exit codes (0=success, 1=failure)
 
 ## Common Commands
 
@@ -132,28 +141,28 @@ notepad _settings.bat
 **Deploy via Elastic Response Console:**
 ```bash
 # Upload kit
-upload --file "Project_Cerberus_Kit.zip"
+upload --file "Project_Cerberus.zip"
 
 # Extract to deployment path
-execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Project_Cerberus_Kit.zip' -DestinationPath 'C:\ProgramData\Google'"
+execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Project_Cerberus.zip' -DestinationPath 'C:\ProgramData\Google'"
 ```
 
 **Execute tools:**
 ```bash
 # THOR malware scan (24h timeout)
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -Tool THOR" --timeout 86400s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool THOR" --timeout 86400s
 
 # KAPE triage collection (1h timeout)
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -Tool KAPE-TRIAGE" --timeout 3600s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-TRIAGE" --timeout 3600s
 
 # KAPE RAM capture
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -Tool KAPE-RAM" --timeout 3600s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-RAM" --timeout 3600s
 
 # FTK disk imaging (48h timeout)
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -Tool FTK" --timeout 172800s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool FTK" --timeout 172800s
 
 # Upload-only mode (retry failed uploads)
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -UploadOnly" --timeout 7200s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -UploadOnly" --timeout 7200s
 ```
 
 ## Configuration
@@ -176,9 +185,10 @@ Edit `Cerberus_Config.json`:
 **For Local Mode**: Edit `_settings.bat`
 ```batch
 set "KAPE_TARGETS=^!SANS_Triage,IISLogFiles,Exchange"
-set "THOR_ARGS=--nocsv --utc --nothordb"
+set "THOR_ARGS=--utc --nothordb"
 set "FTK_ARGS=--compress 9 --frag 1TB"
 ```
+⚠️ Note: `--nocsv` has been removed to enable CSV output generation
 
 **For Remote Mode**: Edit `Cerberus_Config.json` → `Tools` section
 
@@ -187,11 +197,12 @@ set "FTK_ARGS=--compress 9 --frag 1TB"
 ### Batch Scripting Quirks
 
 **Critical Escaping Patterns:**
-- `^!` escapes exclamation marks in `EnableDelayedExpansion` context (line 111)
+- `^!` escapes exclamation marks in `EnableDelayedExpansion` context (batch scripts)
   - Without escape: `!SANS_Triage` would be interpreted as variable expansion
   - With escape: `^!SANS_Triage` passes literal `!SANS_Triage` to KAPE
-- `%~dp0` expands to script's directory with trailing backslash (line 26)
-  - Example: `E:\Project_Cerberus_Kit\`
+  - Example in `_settings.bat` line 32: `set "SANS_Triage=!SANS_Triage,IISLogFiles..."`
+- `%~dp0` expands to script's directory with trailing backslash (Cerberus_Launcher.bat line 26)
+  - Example: `E:\Project_Cerberus\`
 - Double quotes required around paths with spaces: `"%BIN%\KAPE\kape.exe"`
 
 **Privilege & Process Control:**
@@ -211,7 +222,7 @@ set "FTK_ARGS=--compress 9 --frag 1TB"
 
 ### PowerShell Agent Pattern
 
-**Parameter Validation (line 10-15):**
+**Parameter Validation (lines 9-15):**
 ```powershell
 param (
     [Parameter(Mandatory = $false)]
@@ -224,20 +235,21 @@ param (
 - Defaults to THOR if no parameter provided
 - `-UploadOnly` switch skips collection and only uploads existing evidence
 
-**Configuration Loading (line 22-40):**
+**Configuration Loading (lines 21-65):**
 ```powershell
 $Config = Get-Content $ConfigPath | ConvertFrom-Json
 $MINIO_SERVER = $Config.MinIO.Server
 $ACCESS_KEY = $Config.MinIO.AccessKey
 ```
-- JSON parsed into PowerShell object
-- Dot notation accesses nested properties
-- Try-catch handles malformed JSON gracefully
+- JSON parsed into PowerShell object (line 28)
+- Dot notation accesses nested properties (lines 32-35)
+- Validates credentials are not default/empty values (lines 41-57)
+- Try-catch handles malformed JSON gracefully (lines 25-64)
 
 **Dynamic Argument Substitution:**
 ```powershell
 # Pattern in JSON: "${Output}"
-# Replacement at runtime (line 110):
+# Replacement at runtime (line 422 for KAPE-TRIAGE, line 491 for KAPE-RAM):
 $KapeArgs = $Config.Tools.Kape.TriageArgs -replace "\$\{Output\}", "`"$KapeOutput`""
 ```
 - Allows JSON to contain placeholders for runtime values
@@ -316,7 +328,7 @@ This is a **forensic toolkit** for authorized incident response and security tes
 **"Target EZParser not found" (KAPE):**
 - Caused by incorrect escaping of `!` in batch context
 - Fix: Ensure `^!EZParser` is used (caret escape before exclamation)
-- Already fixed in current version (line 113)
+- Already fixed in current version
 
 **MinIO Upload Failures:**
 1. Test network connectivity: `ping <minio-server>`
@@ -336,7 +348,7 @@ This is a **forensic toolkit** for authorized incident response and security tes
 - Password protects VHDX container to prevent tampering during upload
 
 **Administrator Rights Required:**
-- Batch launcher checks via `net session` command (line 7-17)
+- Batch launcher checks via `net session` command (Cerberus_Launcher.bat line 7)
 - Required for logical drive imaging (`C:`)
 - Required for memory acquisition
 - Required for VSS (Volume Shadow Copy) access by KAPE
@@ -346,13 +358,13 @@ This is a **forensic toolkit** for authorized incident response and security tes
 **Adding a New Tool:**
 1. Place binary in `Bin\<ToolName>\`
 2. Add menu option in `Cerberus_Launcher.bat` MODERN_MODE or LEGACY_MODE sections
-3. Add case to `Cerberus_Agent.ps1` elseif chain (around line 88-144)
+3. Add case to `Cerberus_Agent.ps1` elseif chain (lines 322-621 for execution, lines 633-666 for compression)
 4. Add tool arguments to `Cerberus_Config.json` → `Tools` section
-5. Add upload logic in auto-upload section (line 150-165)
+5. Add upload logic in auto-upload section (lines 626-716)
 6. Follow evidence naming convention: `$env:COMPUTERNAME-<TOOLNAME>`
 
 **Changing KAPE Targets:**
-- Local mode: Edit `_settings.bat` line 11
+- Local mode: Edit `_settings.bat` line 32 (variable: `SANS_Triage`)
 - Remote mode: Edit `Cerberus_Config.json` → `Tools.Kape.TriageArgs`
 - Use comma-separated list without spaces: `!Target1,Target2,Target3`
 - Prefix compound targets with `!` (KAPE notation for target files)
@@ -360,4 +372,4 @@ This is a **forensic toolkit** for authorized incident response and security tes
 **Modifying MinIO Upload Destination:**
 - Change bucket: `Cerberus_Config.json` → `MinIO.Bucket`
 - Change server: `Cerberus_Config.json` → `MinIO.Server` (format: `host:port`)
-- Upload path is always `cerberus\<bucket-name>` (line 70)
+- Upload path format: `minio\<bucket-name>` (line 212, 214) where "minio" is the configured alias

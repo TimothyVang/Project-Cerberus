@@ -363,8 +363,8 @@ else {
                 $thorProcess.Kill()
                 Write-Log "[ERROR] THOR scan timeout" "ERROR"
                 $scriptSuccess = $false
-                $failedComponents += "THOR"
-                exit 1
+                $failedComponents += "THOR-Timeout"
+                break  # Exit monitoring loop but continue to upload phase
             }
 
             # Wait 60 seconds or until exit
