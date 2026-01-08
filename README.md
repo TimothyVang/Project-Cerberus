@@ -62,11 +62,48 @@ Project_Cerberus_Kit/
 2.  **Upload** via Elastic "Response Actions".
 3.  **Execute** using the `execute` commands found in `Cerberus_QRF.md`.
 
-### 3. Execution Commands
-*   **THOR**: `powershell -ExecutionPolicy Bypass -File "...\Cerberus_Agent.ps1" -Tool THOR`
-*   **KAPE**: `powershell -ExecutionPolicy Bypass -File "...\Cerberus_Agent.ps1" -Tool KAPE-TRIAGE`
-*   **RAM**:  `powershell -ExecutionPolicy Bypass -File "...\Cerberus_Agent.ps1" -Tool KAPE-RAM`
-*   **FTK**:  `powershell -ExecutionPolicy Bypass -File "...\Cerberus_Agent.ps1" -Tool FTK`
+### 3. Execution Commands (Elastic Defend / Kibana)
+
+**Copy-paste these commands into Kibana Response Console:**
+
+```bash
+# 1. THOR Scan (1-4 hours | ~50MB output)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -Tool THOR" --timeout 86400s
+
+# 2. KAPE Triage (15-30 min | 2-5GB output)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -Tool KAPE-TRIAGE" --timeout 3600s
+
+# 3. RAM Capture (5-15 min | Size = Installed RAM)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -Tool KAPE-RAM" --timeout 3600s
+
+# 4. Full Disk Image (2-8 hours | 20-100GB output)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -Tool FTK" --timeout 172800s
+
+# 5. Upload Existing Evidence (if upload failed)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus_Kit\Cerberus_Agent.ps1\" -UploadOnly" --timeout 7200s
+```
+
+**Path Notes:**
+
+- Default deployment path: `C:\ProgramData\Google\Project_Cerberus_Kit\`
+- Adjust path if deployed elsewhere
+- Use double backslashes (`\\`) or forward slashes (`/`) in paths
+- Always use `powershell.exe` (not `pwsh.exe`) for compatibility
+
+**Parameters Explained:**
+
+- `-Tool THOR` - APT/Malware scanner
+- `-Tool KAPE-TRIAGE` - Forensic artifact collector (files + server logs)
+- `-Tool KAPE-RAM` - Memory capture only
+- `-Tool FTK` - Full disk imaging
+- `-UploadOnly` - Skip collection, retry MinIO upload
+
+**Timeout Guidelines:**
+
+- THOR: 86400s (24 hours)
+- KAPE-TRIAGE: 3600s (1 hour)
+- KAPE-RAM: 3600s (1 hour)
+- FTK: 172800s (48 hours)
 
 ---
 
