@@ -70,11 +70,57 @@ Before deployment, edit `Cerberus_Config.json` to set your credentials and tool 
         "AccessKey": "your_key",
         "SecretKey": "your_secret",
         "Bucket": "upload"
+    },
+    "Paths": {
+        "EvidenceRoot": "${ScriptRoot}\\Evidence",
+        "FTK": "D:\\FullDiskImages",
+        "EnableCustomPaths": true
+    },
+    "Naming": {
+        "IncludeDomain": true
     }
 }
 ```
-*   **Junior Devs**: This file allows you to change passwords, server IPs, and tool flags without touching the PowerShell code.
+
+**Configuration Options:**
+*   **MinIO**: Server credentials for evidence upload
+*   **Paths**: Custom evidence storage locations (optional)
+    *   `EvidenceRoot`: Default evidence folder (supports `${ScriptRoot}`, `${ComputerName}`, `${Domain}` variables)
+    *   `FTK`: Separate path for large disk images (leave empty to use default)
+    *   `EnableCustomPaths`: Set to `true` to activate custom paths
+*   **Naming**: Zip filename format options
+    *   `IncludeDomain`: Set to `true` to include domain in filenames (e.g., `DC01-morm.gov.mk-THOR.zip`)
+*   **Junior Devs**: This file allows you to change passwords, server IPs, paths, and tool flags without touching the PowerShell code.
 *   **Tradecraft**: KAPE arguments (including VHDX format and passwords) are already pre-configured here.
+
+**Example Use Cases:**
+
+*Domain Controller with FTK on D:\ drive:*
+```json
+{
+    "Paths": {
+        "FTK": "D:\\FullDiskImages\\${ComputerName}",
+        "EnableCustomPaths": true
+    },
+    "Naming": {
+        "IncludeDomain": true
+    }
+}
+```
+Result: FTK images saved to `D:\FullDiskImages\DC01-2016\` with zip named `DC01-2016-morm.gov.mk-FTK.zip`
+
+*Default Behavior (Backward Compatible):*
+```json
+{
+    "Paths": {
+        "EnableCustomPaths": false
+    },
+    "Naming": {
+        "IncludeDomain": false
+    }
+}
+```
+Result: All evidence in `Evidence\` folder with standard naming `HOSTNAME-Tool.zip`
 
 ### Deployment Steps
 1.  **Package**: Zip the `Project_Cerberus` folder -> `Project_Cerberus.zip`.

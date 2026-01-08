@@ -5,6 +5,14 @@
         "SecretKey": "YOUR_SECRET_KEY",
         "Bucket": "upload"
     },
+    "Paths": {
+        "EvidenceRoot": "${ScriptRoot}\\Evidence",
+        "FTK": "",
+        "EnableCustomPaths": false
+    },
+    "Naming": {
+        "IncludeDomain": false
+    },
     "Tools": {
         "Thor": {
             "Args": "--utc --nothordb"

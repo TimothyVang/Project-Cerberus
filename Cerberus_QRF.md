@@ -73,6 +73,8 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 ## Configuration Note
 *   **MinIO Credentials**: configured in `Cerberus_Config.json`.
 *   **Tool Arguments**: Configurable in `Cerberus_Config.json`.
+*   **Custom Paths**: Use `Paths.EnableCustomPaths: true` to store FTK images on D:\ or E:\ drives.
+*   **Domain Naming**: Use `Naming.IncludeDomain: true` to include domain in zip filenames.
 
 ---
 
@@ -121,3 +123,50 @@ mc cp --recursive "Evidence\folder" "minio/upload/" --insecure
 ```
 
 **Note:** The Cerberus Agent uses `mc put -r` for directories with backslash path separator (`minio\bucket`) for Windows compatibility. The `--insecure` flag is required for self-signed certificates.
+
+### Custom Paths: FTK images on D:\ drive
+**Problem:** Default Evidence folder doesn't have enough space for large disk images.
+
+**Solution:**
+```json
+{
+    "Paths": {
+        "EvidenceRoot": "${ScriptRoot}\\Evidence",
+        "FTK": "D:\\FullDiskImages\\${ComputerName}",
+        "EnableCustomPaths": true
+    }
+}
+```
+
+**Supported Variables:**
+- `${ScriptRoot}` - Script directory (e.g., `C:\ProgramData\Google\Project_Cerberus`)
+- `${ComputerName}` - Computer name (e.g., `DC01-2016`)
+- `${Domain}` - Domain name or `WORKGROUP` (e.g., `morm.gov.mk`)
+
+**Verification:**
+```bash
+# Check where FTK images are stored
+execute --command "dir D:\FullDiskImages\ /s"
+
+# Check logs for path confirmation
+get-file --path "C:/ProgramData/Google/Project_Cerberus/Logs/cerberus-*.log"
+```
+
+### Domain Naming: Including domain in zip filenames
+**Problem:** Multiple domains/workgroups need clear identification in uploaded files.
+
+**Solution:**
+```json
+{
+    "Naming": {
+        "IncludeDomain": true
+    }
+}
+```
+
+**Result Examples:**
+- Domain-joined: `DC01-2016-morm.gov.mk-FTK.zip`
+- Workgroup: `DESKTOP-ABC123-WORKGROUP-THOR.zip`
+
+**Backward Compatibility:**
+Set `IncludeDomain: false` for standard naming: `HOSTNAME-Tool.zip`
