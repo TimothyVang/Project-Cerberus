@@ -438,16 +438,15 @@ else {
         if (-not (Test-Path $KapeExe)) {
             Write-Log "KAPE binary not found at $KapeExe" "ERROR"
             $scriptSuccess = $false
-            $failedComponents += "KAPE-RAM"
-            exit 1
-        }
+            $failedComponents += "KAPE-RAM-Missing"
+            # Skip KAPE-RAM execution but continue to upload phase
+        } else {
+            # Build arguments using config
+            $RamArgs = $Config.Tools.Kape.RamArgs -replace "\$\{Output\}", "`"$KapeOutput`""
 
-        # Build arguments using config
-        $RamArgs = $Config.Tools.Kape.RamArgs -replace "\$\{Output\}", "`"$KapeOutput`""
-
-        Write-Log "[KAPE-RAM] Command: $KapeExe $RamArgs"
-        Write-Log "[KAPE-RAM] Output: $KapeOutput"
-        Write-Log "[KAPE-RAM] Starting memory capture (5-15 minutes estimated)..."
+            Write-Log "[KAPE-RAM] Command: $KapeExe $RamArgs"
+            Write-Log "[KAPE-RAM] Output: $KapeOutput"
+            Write-Log "[KAPE-RAM] Starting memory capture (5-15 minutes estimated)..."
 
         # Start process
         $ramProcess = Start-Process -FilePath $KapeExe `

@@ -28,10 +28,13 @@ set "BIN=%KIT_ROOT%Bin"
 set "EVIDENCE=%KIT_ROOT%Evidence"
 set "LOGS=%KIT_ROOT%Logs"
 
+:: Define KAPE target variable
+set "SANS_Triage=!SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS"
+
 :: Create Evidence folder if missing
 if not exist "%EVIDENCE%" (
     mkdir "%EVIDENCE%"
-    if !errorlevel! neq 0 (
+    if errorlevel 1 (
         echo.
         echo   [ERROR] Failed to create Evidence directory
         echo   [ERROR] Check permissions or disk space
@@ -43,7 +46,7 @@ if not exist "%EVIDENCE%" (
 
 if not exist "%LOGS%" (
     mkdir "%LOGS%"
-    if !errorlevel! neq 0 (
+    if errorlevel 1 (
         echo.
         echo   [ERROR] Failed to create Logs directory
         echo   [ERROR] Check permissions or disk space
@@ -300,9 +303,7 @@ if /I "!KChoice!"=="1" (
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    setlocal DisableDelayedExpansion
     "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Quick" --tflush --target !SANS_Triage --gui
-    endlocal
 
     echo.
     echo   ====================================================================
@@ -329,9 +330,7 @@ if /I "!KChoice!"=="2" (
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    setlocal DisableDelayedExpansion
     "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Full" --tflush --target !SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --gui
-    endlocal
 
     echo.
     echo   ====================================================================
@@ -368,9 +367,7 @@ if /I "!KChoice!"=="3" (
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    setlocal DisableDelayedExpansion
     "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly" --tflush --target !SANS_Triage --gui
-    endlocal
 
     echo.
     echo   ====================================================================
@@ -406,9 +403,7 @@ if /I "!KChoice!"=="4" (
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    setlocal DisableDelayedExpansion
     "%BIN%\KAPE\kape.exe" --msource C:\ --mdest "%EVIDENCE%\%COMPUTERNAME%_RAM" --zm true --module MagnetForensics_RAMCapture --gui
-    endlocal
 
     echo.
     echo   ====================================================================
@@ -421,7 +416,7 @@ if /I "!KChoice!"=="4" (
     goto KAPE_MENU
 )
 
-if /I "!KChoice!"=="4" (
+if /I "!KChoice!"=="5" (
     cls
     echo.
     echo   ====================================================================
@@ -458,9 +453,7 @@ if /I "!KChoice!"=="4" (
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    setlocal DisableDelayedExpansion
     "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Custom" --tflush --target !CustomTargets! --gui
-    endlocal
 
     echo.
     echo   ====================================================================
