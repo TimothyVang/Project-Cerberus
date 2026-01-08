@@ -1,0 +1,184 @@
+echo   SAFETY NOTE: Legacy mode uses x86 binaries and low CPU priority
+echo   to prevent crashes on older systems.
+echo.
+echo   1) THOR Scan (x86)
+echo      ^> APT/Malware scanner using THOR Lite x86
+echo      ^> Time: 1-6 hours  ^| Space: ~50MB
+echo.
+echo   2) Memory Capture (FTK x86)
+echo      ^> Captures live RAM using x86 FTK Imager
+echo      ^> Time: 10-20 min ^| Space: Equals RAM size
+echo.
+echo   3) Disk Image C: (FTK x86)
+echo      ^> Creates RAW disk image using x86 FTK Imager
+echo      ^> Time: 3-10 hours ^| Space: 20GB - 100GB+
+echo.
+echo   B) Back to Main Menu
+echo.
+echo   ========================================================================
+set "LChoice="
+set /p "LChoice=[?] Select Tool: "
+
+if /I "!LChoice!"=="1" (
+    cls
+    echo.
+    echo   ====================================================================
+    echo   THOR MALWARE SCANNER (LEGACY x86)
+    echo   ====================================================================
+    echo.
+
+    if not exist "%BIN%\THOR\thor-lite.exe" (
+        echo   [ERROR] THOR Lite x86 binary not found!
+        echo.
+        echo   Expected: %BIN%\THOR\thor-lite.exe
+        echo   Please verify the x86 version is installed.
+        echo.
+        pause
+        goto LEGACY_MODE
+    )
+
+    echo   Tool: THOR Lite x86 (32-bit)
+    echo   Output: %EVIDENCE%\%COMPUTERNAME%_THOR
+    echo   Priority: LOW (system-safe)
+    echo.
+    echo   This will scan your system for:
+    echo   - Malware signatures and IOCs
+    echo   - APT indicators and suspicious files
+    echo   - Registry persistence mechanisms
+    echo   - Rootkits and anomalies
+    echo.
+    echo   [INFO] Scan time: 1-6 hours (depends on system size)
+    echo   [INFO] Running at low priority to prevent system stress.
+    echo.
+    echo   ====================================================================
+    echo.
+    set /p "Confirm=Continue with THOR scan? (Y/N): "
+    if /I not "!Confirm!"=="Y" goto LEGACY_MODE
+
+    echo.
+    echo   [INFO] Creating output directory...
+    if not exist "%EVIDENCE%\%COMPUTERNAME%_THOR" mkdir "%EVIDENCE%\%COMPUTERNAME%_THOR"
+
+    echo   [INFO] Starting THOR scan with LOW CPU priority...
+    echo   [WAIT] Do not close this window! Scan in progress...
+    echo.
+
+    start /low /wait "" "%BIN%\THOR\thor-lite.exe" --logfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt" --htmlfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html" --utc --nothordb
+
+    echo.
+    echo   ====================================================================
+    echo   [SUCCESS] THOR Scan Complete!
+    echo   ====================================================================
+    echo.
+    echo   Results saved to:
+    echo   - Text log:  %EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt
+    echo   - HTML report: %EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html
+    echo.
+    echo   Review the HTML report for findings and alerts.
+    echo   ====================================================================
+    echo.
+    pause
+    goto LEGACY_MODE
+)
+
+if /I "!LChoice!"=="2" (
+    cls
+    echo.
+    echo   ====================================================================
+    echo   LEGACY MEMORY CAPTURE
+    echo   ====================================================================
+    echo.
+
+    if not exist "%BIN%\FTK\x86\ftkimager.exe" (
+        echo   [ERROR] FTK x86 binary not found!
+        echo.
+        echo   Expected: %BIN%\FTK\x86\ftkimager.exe
+        echo   Please verify the legacy version is installed.
+        echo.
+        pause
+        goto LEGACY_MODE
+    )
+
+    echo   Tool: FTK Imager x86 (32-bit)
+    echo   Output: %EVIDENCE%\%COMPUTERNAME%_Memory.mem
+    echo   Priority: LOW (system-safe)
+    echo.
+    echo   [INFO] Memory size will equal installed RAM.
+    echo   [INFO] Running at low priority to prevent system stress.
+    echo.
+    echo   ====================================================================
+    echo.
+    set /p "Confirm=Continue? (Y/N): "
+    if /I not "!Confirm!"=="Y" goto LEGACY_MODE
+
+    echo.
+    echo   [INFO] Starting memory capture...
+    echo   [INFO] Running with LOW CPU priority for system safety.
+    echo.
+
+    start /low /wait "" "%BIN%\FTK\x86\ftkimager.exe" --capture-memory "%EVIDENCE%\%COMPUTERNAME%_Memory.mem" --compress 1
+
+    echo.
+    echo   ====================================================================
+    echo   [SUCCESS] Memory Capture Complete!
+    echo   ====================================================================
+    echo.
+    echo   Memory Dump: %EVIDENCE%\%COMPUTERNAME%_Memory.mem
+    echo.
+    pause
+    goto LEGACY_MODE
+)
+
+if /I "!LChoice!"=="3" (
+    cls
+    echo.
+    echo   ====================================================================
+    echo   LEGACY DISK IMAGE - C: DRIVE
+    echo   ====================================================================
+    echo.
+
+    if not exist "%BIN%\FTK\x86\ftkimager.exe" (
+        echo   [ERROR] FTK x86 binary not found!
+        echo.
+        echo   Expected: %BIN%\FTK\x86\ftkimager.exe
+        echo.
+        pause
+        goto LEGACY_MODE
+    )
+
+    echo   Tool: FTK Imager x86 (32-bit)
+    echo   Drive: C: (Logical Volume)
+    echo   Output: %EVIDENCE%\%COMPUTERNAME%_Disk.raw
+    echo   Priority: LOW (system-safe)
+    echo   Format: RAW with maximum compression
+    echo.
+    echo   [WARN] This creates VERY LARGE files!
+    echo   [WARN] Ensure 50GB+ free space on your USB drive.
+    echo   [WARN] Expect 3-10 hours on older systems.
+    echo.
+    echo   ====================================================================
+    echo.
+    set /p "Confirm=Continue with disk imaging? (Y/N): "
+    if /I not "!Confirm!"=="Y" goto LEGACY_MODE
+
+    echo.
+    echo   [INFO] Starting disk imaging...
+    echo   [INFO] Running with LOW CPU priority for system safety.
+    echo   [INFO] Do not interrupt or power off during imaging!
+    echo.
+
+    start /low /wait "" "%BIN%\FTK\x86\ftkimager.exe" C: "%EVIDENCE%\%COMPUTERNAME%_Disk.raw" --compress 9 --frag 1TB
+
+    echo.
+    echo   ====================================================================
+    echo   [SUCCESS] Disk Image Complete!
+    echo   ====================================================================
+    echo.
+    echo   Image Location: %EVIDENCE%\%COMPUTERNAME%_Disk.raw
+    echo.
+    pause
+    goto LEGACY_MODE
+)
+
+if /I "!LChoice!"=="B" goto MAIN_MENU
+goto LEGACY_MODE

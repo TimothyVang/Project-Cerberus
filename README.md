@@ -6,7 +6,8 @@
 Project_Cerberus_Kit/
 ├── Bin/                   # Tools (KAPE, THOR, FTK, MinIO)
 ├── Evidence/              # Output store (Preserved locally)
-├── Logs/                  # Operation logs
+├── Logs/                  # Execution logs (cerberus-YYYYMMDD.log)
+├── Lib/                   # Shared modules (Write-Log.ps1)
 ├── Cerberus_Launcher.bat  # [MODE 1] Local/USB Terminal Interface
 ├── Cerberus_Agent.ps1     # [MODE 2] Remote/Elastic Headless Agent
 ├── Cerberus_Config.json   # Remote Configuration (Credentials & Args)
@@ -37,12 +38,24 @@ Project_Cerberus_Kit/
 **Best for**: Remote endpoints, scalable collection via Kibana/Security Onion.
 
 ### 1. Configuration
-Open `Cerberus_Config.json` in a text editor to set your MinIO credentials and tool flags:
+
+**FIRST TIME SETUP:**
+
+1. Copy `Cerberus_Config.json.template` to `Cerberus_Config.json`
+2. Edit `Cerberus_Config.json` with your MinIO credentials:
+
 ```json
 {
-    "MinIO": { "Server": "...", "AccessKey": "...", "SecretKey": "..." }
+    "MinIO": {
+        "Server": "10.1.15.173:8443",
+        "AccessKey": "YOUR_ACCESS_KEY",
+        "SecretKey": "YOUR_SECRET_KEY",
+        "Bucket": "upload"
+    }
 }
 ```
+
+**IMPORTANT:** Never commit `Cerberus_Config.json` to version control (it's in `.gitignore`).
 
 ### 2. Deployment
 1.  **Zip** the `Project_Cerberus_Kit` folder.
@@ -74,17 +87,67 @@ powershell -ExecutionPolicy Bypass -File "Cerberus_Agent.ps1" -Tool THOR
 - `*.csv` - CSV data files
 
 **MinIO Upload (Remote Mode):**
-```powershell
-# Upload directory
-mc cp --recursive "Evidence\HOSTNAME-THOR" "cerberus/upload/" --insecure
 
+```powershell
 # Upload file
-mc cp "Evidence\file.zip" "cerberus/upload/" --insecure
+mc put "Evidence\file.zip" minio/upload --insecure
+
+# Upload directory
+mc put --recursive "Evidence\HOSTNAME-THOR" minio/upload --insecure
 ```
 
-**Important Flags:**
+**Important Notes:**
+
 - THOR: Use `--logfile` and `--htmlfile` (NOT `--output`)
-- MinIO: Use `mc cp` command (NOT `mc put`)
+- MinIO: The agent uses `mc put` with forward slashes in bucket path
+- MinIO: Automatically configures using `$env:MC_HOST_minio`
+
+---
+
+## 📋 Troubleshooting & Logs
+
+### Execution Logs
+
+All operations are logged to: `Logs\cerberus-YYYYMMDD.log`
+
+**Retrieve logs remotely:**
+
+```bash
+# Get today's log (replace date)
+get-file --path "C:/ProgramData/Google/Logs/cerberus-20260108.log"
+
+# List all available logs
+execute --command "dir C:\ProgramData\Google\Logs\cerberus-*.log"
+```
+
+**Log format:**
+
+```text
+[2026-01-08 14:23:45] [INFO] Starting THOR Scan (Remote Mode)...
+[2026-01-08 14:25:12] [SUCCESS] Upload Complete: Evidence\HOSTNAME-THOR
+[2026-01-08 14:25:13] [ERROR] THOR failed with exit code: 1
+```
+
+### Common Issues
+
+**Config not found:**
+
+- Copy `Cerberus_Config.json.template` to `Cerberus_Config.json`
+- Edit with your MinIO credentials
+
+**MinIO upload fails:**
+
+- Check network: Can you reach the MinIO server?
+- Verify credentials in `Cerberus_Config.json`
+- Check logs for detailed error messages
+
+**Tool execution fails:**
+
+- Check disk space (10GB+ required for FTK/KAPE)
+- Verify tool binaries exist in `Bin/` directory
+- Review exit codes in logs
+
+**See `Logs/README.md` for detailed logging information.**
 
 ---
 *See `Project_Cerberus_User_Guide.md` for a detailed visual field manual.*
