@@ -369,16 +369,15 @@ else {
         if (-not (Test-Path $KapeExe)) {
             Write-Log "KAPE binary not found at $KapeExe" "ERROR"
             $scriptSuccess = $false
-            $failedComponents += "KAPE-TRIAGE"
-            exit 1
-        }
+            $failedComponents += "KAPE-TRIAGE-Missing"
+            # Skip KAPE execution but continue to upload phase
+        } else {
+            # Build arguments using config
+            $KapeArgs = $Config.Tools.Kape.TriageArgs -replace "\$\{Output\}", "`"$KapeOutput`""
 
-        # Build arguments using config
-        $KapeArgs = $Config.Tools.Kape.TriageArgs -replace "\$\{Output\}", "`"$KapeOutput`""
-
-        Write-Log "[KAPE] Command: $KapeExe $KapeArgs"
-        Write-Log "[KAPE] Output: $KapeOutput"
-        Write-Log "[KAPE] Starting collection (15-30 minutes estimated)..."
+            Write-Log "[KAPE] Command: $KapeExe $KapeArgs"
+            Write-Log "[KAPE] Output: $KapeOutput"
+            Write-Log "[KAPE] Starting collection (15-30 minutes estimated)..."
 
         # Start process
         $kapeProcess = Start-Process -FilePath $KapeExe `
@@ -397,8 +396,8 @@ else {
                 $kapeProcess.Kill()
                 Write-Log "[ERROR] KAPE collection timeout" "ERROR"
                 $scriptSuccess = $false
-                $failedComponents += "KAPE-TRIAGE"
-                exit 1
+                $failedComponents += "KAPE-TRIAGE-Timeout"
+                break  # Exit monitoring loop but continue to upload phase
             }
 
             $exited = $kapeProcess.WaitForExit(60000)
@@ -426,6 +425,7 @@ else {
         }
 
         Write-Log "KAPE Triage Finished."
+        }  # End of else block for KAPE-TRIAGE execution
     }
     # =============================================================================
     # TOOL EXECUTION - KAPE RAM (Memory Capture)
@@ -575,39 +575,97 @@ else {
     }
     
     # =============================================================================
-    # AUTO-UPLOAD - Upload evidence immediately after collection
+    # AUTO-UPLOAD - Zip and upload evidence immediately after collection
     # =============================================================================
-    Write-Log "`n[PHASE] Auto-Uploading Evidence..."
+    Write-Log "`n[PHASE] Compressing and Uploading Evidence..."
 
-    # Upload the correct folder based on which tool we ran
+    # Determine output folder and zip path based on tool
     $uploadSuccess = $false
+    $evidenceFolder = $null
+    $zipPath = $null
+
     if ($Tool -eq "THOR") {
-        $uploadSuccess = Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-THOR"
+        $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-THOR"
+        $zipPath = "$EvidenceDir\$env:COMPUTERNAME-THOR.zip"
     }
     elseif ($Tool -eq "KAPE-TRIAGE") {
-        $uploadSuccess = Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage"
+        $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage"
+        $zipPath = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage.zip"
     }
     elseif ($Tool -eq "KAPE-RAM") {
-        $uploadSuccess = Upload-To-MinIO -FilePath "$EvidenceDir\$env:COMPUTERNAME-RAM"
+        $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-RAM"
+        $zipPath = "$EvidenceDir\$env:COMPUTERNAME-RAM.zip"
     }
     elseif ($Tool -eq "FTK") {
-        # FTK creates multiple files (image.raw, image.raw.001, etc.)
-        # Get-ChildItem lists files in a directory
-        # | ForEach-Object runs code for each file found
+        # FTK creates individual files, not a folder - zip them all together
+        Write-Log "[ZIP] Compressing FTK disk image files..."
         $ftkFiles = Get-ChildItem -Path "$EvidenceDir" -Filter "$env:COMPUTERNAME-Disk.*"
-        foreach ($ftkFile in $ftkFiles) {
-            $result = Upload-To-MinIO -FilePath $ftkFile.FullName
-            if ($result) {
-                $uploadSuccess = $true
+
+        if ($ftkFiles) {
+            $zipPath = "$EvidenceDir\$env:COMPUTERNAME-FTK.zip"
+
+            try {
+                Compress-Archive -Path $ftkFiles.FullName -DestinationPath $zipPath -Force
+                Write-Log "[ZIP] Created: $zipPath"
+
+                # Upload the zip file
+                $uploadSuccess = Upload-To-MinIO -FilePath $zipPath
             }
+            catch {
+                Write-Log "[ERROR] Failed to compress FTK files: $($_.Exception.Message)" "ERROR"
+                $scriptSuccess = $false
+                $failedComponents += "Compression"
+            }
+        }
+    }
+
+    # Zip folder-based evidence (THOR, KAPE-TRIAGE, KAPE-RAM)
+    if ($evidenceFolder -and (Test-Path $evidenceFolder)) {
+        Write-Log "[ZIP] Compressing folder: $evidenceFolder"
+
+        try {
+            # Calculate folder size before compression
+            $folderSize = (Get-ChildItem $evidenceFolder -Recurse -ErrorAction SilentlyContinue |
+                Measure-Object -Property Length -Sum).Sum
+            $folderSizeMB = [math]::Round($folderSize / 1MB, 2)
+            Write-Log "[ZIP] Original size: $folderSizeMB MB"
+
+            # Compress the entire folder
+            Compress-Archive -Path "$evidenceFolder\*" -DestinationPath $zipPath -Force
+
+            # Check zip file size
+            if (Test-Path $zipPath) {
+                $zipSize = (Get-Item $zipPath).Length
+                $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
+                $compressionRatio = [math]::Round(($zipSize / $folderSize) * 100, 1)
+                Write-Log "[ZIP] Compressed to: $zipSizeMB MB ($compressionRatio% of original)" "SUCCESS"
+
+                # Upload the zip file
+                $uploadSuccess = Upload-To-MinIO -FilePath $zipPath
+            }
+            else {
+                Write-Log "[ERROR] Zip file was not created: $zipPath" "ERROR"
+                $scriptSuccess = $false
+                $failedComponents += "Compression"
+            }
+        }
+        catch {
+            Write-Log "[ERROR] Failed to compress folder: $($_.Exception.Message)" "ERROR"
+            $scriptSuccess = $false
+            $failedComponents += "Compression"
         }
     }
 
     # Track upload failures
     if (-not $uploadSuccess) {
         Write-Log "[WARN] Evidence upload failed - files preserved locally" "WARNING"
+        Write-Log "[LOCAL] Original evidence: $evidenceFolder" "WARNING"
+        Write-Log "[LOCAL] Zip file: $zipPath" "WARNING"
         $scriptSuccess = $false
         $failedComponents += "Upload"
+    }
+    else {
+        Write-Log "[SUCCESS] Evidence uploaded successfully - originals preserved locally" "SUCCESS"
     }
 }
 
