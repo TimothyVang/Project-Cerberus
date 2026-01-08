@@ -1,8 +1,5 @@
 # Project Cerberus Ignore File
 
-# CRITICAL: Configuration with credentials
-Cerberus_Config.json
-
 # CRITICAL: Never upload Evidence or Logs
 Evidence/
 Logs/
