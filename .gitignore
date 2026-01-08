@@ -12,6 +12,9 @@ Logs/
 *.log
 debug_*.log
 
+# KAPE Console Logs
+Bin/KAPE/*_ConsoleLog.txt
+
 # Editor Files
 .vscode/
 .idea/
