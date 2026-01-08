@@ -51,11 +51,41 @@ Project_Cerberus/
         "AccessKey": "YOUR_ACCESS_KEY",
         "SecretKey": "YOUR_SECRET_KEY",
         "Bucket": "upload"
+    },
+    "Paths": {
+        "EvidenceRoot": "${ScriptRoot}\\Evidence",
+        "FTK": "",
+        "EnableCustomPaths": false
+    },
+    "Naming": {
+        "IncludeDomain": false
     }
 }
 ```
 
 **IMPORTANT:** Never commit `Cerberus_Config.json` to version control (it's in `.gitignore`).
+
+**OPTIONAL: Custom Paths & Domain Naming**
+
+If you need to store evidence on different drives (e.g., FTK disk images on D:\), enable custom paths:
+
+```json
+{
+    "Paths": {
+        "EvidenceRoot": "${ScriptRoot}\\Evidence",
+        "FTK": "D:\\FullDiskImages",
+        "EnableCustomPaths": true
+    },
+    "Naming": {
+        "IncludeDomain": true
+    }
+}
+```
+
+- **Path Variables**: `${ScriptRoot}`, `${ComputerName}`, `${Domain}`
+- **EnableCustomPaths**: Set to `true` to use custom evidence paths
+- **IncludeDomain**: Set to `true` to include domain name in zip filenames (e.g., `HOSTNAME-domain.com-THOR.zip`)
+- **FTK Path**: Leave empty to use default Evidence folder, or specify custom path for large disk images
 
 ### 2. Deployment
 1.  **Zip** the `Project_Cerberus` folder.
