@@ -18,8 +18,8 @@
             "Args": "--utc --nothordb"
         },
         "Kape": {
-            "TriageArgs": "--tsource C: --tdest ${Output} --tflush --target !SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --ifw --vhdx TargetsOutput_%m --zpw NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk=",
-            "RamArgs": "--msource C:\\ --mdest ${Output} --zm true --module MagnetForensics_RAMCapture --zpw NWY0ZGNjM2I1YWE3NjVkNjFkODMyN2RlYjg4MmNmOTk="
+            "TriageArgs": "--tsource C: --tdest ${Output} --tflush --target !SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --ifw --vhdx TargetsOutput_%m",
+            "RamArgs": "--msource C:\\ --mdest ${Output} --zm true --module MagnetForensics_RAMCapture"
         },
         "FTK": {
             "Args": "--compress 9 --frag 1TB"
