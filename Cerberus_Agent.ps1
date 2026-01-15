@@ -95,7 +95,9 @@ function Resolve-PathTemplate {
     $resolved = $Template
     $resolved = $resolved -replace '\$\{ScriptRoot\}', $ScriptRoot
     $resolved = $resolved -replace '\$\{ComputerName\}', $env:COMPUTERNAME
-    $resolved = $resolved -replace '\$\{Domain\}', ($env:USERDNSDOMAIN -or 'WORKGROUP')
+    
+    $domain = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { 'WORKGROUP' }
+    $resolved = $resolved -replace '\$\{Domain\}', $domain
 
     return $resolved
 }
