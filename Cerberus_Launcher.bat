@@ -331,7 +331,7 @@ if /I "!KChoice!"=="2" (
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Full" --tflush --target !SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --gui
+    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Full" --tflush --target ^!SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --gui
 
     echo.
     echo   ====================================================================
@@ -351,7 +351,7 @@ if /I "!KChoice!"=="3" (
     echo   DISK-ONLY COLLECTION (No Memory Files)
     echo   ====================================================================
     echo.
-    echo   Collecting: !SANS_Triage (excluding MemoryFiles)
+    echo   Collecting: ^!SANS_Triage (excluding MemoryFiles)
     echo   Output: %EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly
     echo.
     echo   [INFO] This collects the same files as Quick Triage but
@@ -368,7 +368,7 @@ if /I "!KChoice!"=="3" (
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly" --tflush --target !SANS_Triage --gui
+    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly" --tflush --target ^!SANS_Triage --gui
 
     echo.
     echo   ====================================================================
@@ -427,14 +427,14 @@ if /I "!KChoice!"=="5" (
     echo   Enter KAPE targets separated by commas (no spaces).
     echo.
     echo   Common targets:
-    echo   - !SANS_Triage        Registry, logs, prefetch, MFT
+    echo   - ^!SANS_Triage        Registry, logs, prefetch, MFT
     echo   - WebBrowsers         All browser history/cache
     echo   - RegistryHives       Registry hives only
     echo   - CloudStorage_All    OneDrive, Dropbox, etc.
     echo   - EventLogs           Windows Event Logs
     echo   - $MFT                Master File Table
     echo.
-    echo   Example: !SANS_Triage,WebBrowsers,CloudStorage_All
+    echo   Example: ^!SANS_Triage,WebBrowsers,CloudStorage_All
     echo.
     echo   ====================================================================
     echo.
