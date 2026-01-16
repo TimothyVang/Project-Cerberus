@@ -6,10 +6,11 @@
 #
 # WHAT THIS SCRIPT DOES:
 #   1. Load configuration from Cerberus_Config.json
-#   2. Check disk space (need LOTS of free space!)
-#   3. Run FTK Imager to create a bit-for-bit copy of the C: drive
-#   4. Compress the disk image into a .zip file
-#   5. Upload the .zip to MinIO server
+#   2. REQUIRE external drive (Paths.FTK must be configured!)
+#   3. Show pre-flight check with source and target drive info
+#   4. Run FTK Imager to create a bit-for-bit copy of the C: drive
+#   5. Compress the disk image into a .zip file
+#   6. Upload the .zip to MinIO server
 #
 # WHAT IS A DISK IMAGE?
 #   A disk image is an exact copy of every byte on the hard drive.
@@ -27,7 +28,13 @@
 #   Usually 2-8 hours depending on disk size.
 #   A 500GB disk = ~500GB output file (before compression)
 #
-# WARNING: This creates VERY LARGE files! Make sure you have enough space.
+# *** IMPORTANT ***
+#   FTK creates disk images that can be 100GB - 2TB in size.
+#   You MUST configure Paths.FTK in Cerberus_Config.json to point
+#   to an external drive. Saving locally WILL crash your system!
+#
+# OUTPUT FILE NAMING:
+#   HOSTNAME-DOMAIN-FTK.zip (e.g., DESKTOP-PC1-WORKGROUP-FTK.zip)
 #
 # =============================================================================
 
@@ -41,6 +48,24 @@
 . "$PSScriptRoot\Lib\Cerberus-Config.ps1"
 . "$PSScriptRoot\Lib\Cerberus-Upload.ps1"
 . "$PSScriptRoot\Lib\Cerberus-RunTool.ps1"
+
+
+# =============================================================================
+# HELPER FUNCTION: Generate zip filename with HOSTNAME-DOMAIN-TOOL.zip format
+# =============================================================================
+
+function Get-ZipFileName {
+    param(
+        [string]$Tool,
+        [string]$Directory
+    )
+    
+    $hostname = $env:COMPUTERNAME
+    $domain = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "WORKGROUP" }
+    $zipName = "$hostname-$domain-$Tool.zip"
+    
+    return Join-Path $Directory $zipName
+}
 
 
 # =============================================================================
@@ -67,19 +92,65 @@ if (-not (Test-Path $FtkExe)) {
     $FtkExe = "$PSScriptRoot\$($PATHS.FtkX86)"
 }
 
-# Use custom FTK path from config if specified
-if ($Config.Paths.EnableCustomPaths -and $Config.Paths.FTK) {
-    $OutputFolder = $Config.Paths.FTK -replace '\$\{ComputerName\}', $env:COMPUTERNAME
-} else {
-    $OutputFolder = "$PSScriptRoot\Evidence"
+# Get compression level from config (default to Optimal)
+$CompressionLevel = if ($Config.Compression -and $Config.Compression.Level) { 
+    $Config.Compression.Level 
+} else { 
+    "Optimal" 
 }
 
+# =============================================================================
+# STEP 4: REQUIRE external drive - FTK images are too large for local storage!
+# =============================================================================
+
+# Get source drive info for error display
+$sourceDrive = Get-WmiObject Win32_LogicalDisk -Filter "DeviceID='C:'"
+$sourceTotalGB = [math]::Round($sourceDrive.Size / 1GB, 2)
+$sourceUsedGB = [math]::Round(($sourceDrive.Size - $sourceDrive.FreeSpace) / 1GB, 2)
+$sourceFreeGB = [math]::Round($sourceDrive.FreeSpace / 1GB, 2)
+
+if (-not $Config.Paths.FTK -or $Config.Paths.FTK -eq "") {
+    Write-Host ""
+    Write-Host "==========================================="  -ForegroundColor Red
+    Write-Host "[ERROR] FTK OUTPUT PATH NOT CONFIGURED" -ForegroundColor Red
+    Write-Host "==========================================="  -ForegroundColor Red
+    Write-Host ""
+    Write-Host "FTK creates disk images that can be 100GB - 2TB in size."
+    Write-Host "Saving locally WILL crash your system due to disk exhaustion."
+    Write-Host ""
+    Write-Host "SOURCE DRIVE (C:)" -ForegroundColor Yellow
+    Write-Host "  Total Size:        $sourceTotalGB GB"
+    Write-Host "  Used Space:        $sourceUsedGB GB"
+    Write-Host "  Free Space:        $sourceFreeGB GB"
+    Write-Host ""
+    Write-Host "ESTIMATED IMAGE SIZE" -ForegroundColor Yellow
+    Write-Host "  Minimum:           $sourceUsedGB GB (used space)"
+    Write-Host "  Maximum:           $sourceTotalGB GB (full disk)"
+    Write-Host ""
+    Write-Host "HOW TO FIX:" -ForegroundColor Cyan
+    Write-Host "  1. Connect an external USB drive (1TB+ recommended)"
+    Write-Host "  2. Edit Cerberus_Config.json"
+    Write-Host "  3. Set Paths.FTK to the external drive path:"
+    Write-Host ""
+    Write-Host '     "Paths": {' -ForegroundColor Gray
+    Write-Host '         "FTK": "E:\\Cerberus_Evidence"' -ForegroundColor Gray
+    Write-Host '     }' -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  4. Run this script again"
+    Write-Host ""
+    Write-Host "==========================================="  -ForegroundColor Red
+    exit 1
+}
+
+# FTK path is configured - use it
+$OutputFolder = $Config.Paths.FTK -replace '\$\{ComputerName\}', $env:COMPUTERNAME
+
 $ImageBase = "$OutputFolder\$env:COMPUTERNAME-Disk"
-$ZipFile = "$OutputFolder\$env:COMPUTERNAME-FTK.zip"
+$ZipFile = Get-ZipFileName -Tool "FTK" -Directory $OutputFolder
 
 
 # =============================================================================
-# STEP 4: Check FTK exists
+# STEP 5: Check FTK exists
 # =============================================================================
 
 if (-not (Test-Path $FtkExe)) {
@@ -93,23 +164,94 @@ Write-Log "Found FTK at: $FtkExe" "SUCCESS"
 
 
 # =============================================================================
-# STEP 5: Check disk space
+# STEP 6: Check disk space and create output folder
 # =============================================================================
-# FTK creates HUGE files - we need lots of space!
 
 if (-not (Test-Path $OutputFolder)) {
     New-Item -ItemType Directory -Path $OutputFolder -Force | Out-Null
 }
 
-if (-not (Test-DiskSpace -Path $OutputFolder -RequiredGB $THRESHOLDS.MinSpaceGB)) {
-    Write-Log "Not enough disk space for disk imaging!" "ERROR"
-    Write-Log "Disk images can be 100+ GB. Free up space or use a different drive." "ERROR"
+# Get target drive info
+$targetDriveLetter = (Split-Path $OutputFolder -Qualifier)
+$targetDrive = Get-WmiObject Win32_LogicalDisk -Filter "DeviceID='$targetDriveLetter'"
+$targetTotalGB = [math]::Round($targetDrive.Size / 1GB, 2)
+$targetFreeGB = [math]::Round($targetDrive.FreeSpace / 1GB, 2)
+
+$domain = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "WORKGROUP" }
+
+# =============================================================================
+# STEP 7: Pre-flight check and user confirmation
+# =============================================================================
+
+Write-Host ""
+Write-Host "==========================================="
+Write-Host "FTK DISK IMAGING - PRE-FLIGHT CHECK"
+Write-Host "==========================================="
+Write-Host ""
+Write-Host "              *** WARNING ***" -ForegroundColor Yellow
+Write-Host "  FTK creates a bit-for-bit copy of the ENTIRE disk."
+Write-Host "  This REQUIRES an external drive with sufficient space."
+Write-Host ""
+Write-Host "SOURCE DRIVE (C:)" -ForegroundColor Yellow
+Write-Host "  Total Size:        $sourceTotalGB GB"
+Write-Host "  Used Space:        $sourceUsedGB GB"
+Write-Host "  Free Space:        $sourceFreeGB GB"
+Write-Host ""
+Write-Host "TARGET DRIVE ($targetDriveLetter)" -ForegroundColor Yellow
+Write-Host "  Path:              $OutputFolder"
+Write-Host "  Total Size:        $targetTotalGB GB"
+Write-Host "  Free Space:        $targetFreeGB GB"
+Write-Host ""
+Write-Host "WHAT GETS CAPTURED" -ForegroundColor Yellow
+Write-Host "  - Complete disk image (every sector)"
+Write-Host "  - Deleted files (recoverable)"
+Write-Host "  - Unallocated space"
+Write-Host "  - File slack space"
+Write-Host ""
+Write-Host "SPACE CALCULATION" -ForegroundColor Yellow
+Write-Host "  Image Size:        $sourceUsedGB - $sourceTotalGB GB"
+Write-Host "  Available:         $targetFreeGB GB"
+
+# Check if target has enough space
+if ($targetFreeGB -lt $sourceUsedGB) {
+    Write-Host ""
+    Write-Host "STATUS: " -NoNewline
+    Write-Host "FAILED - Not enough space on target drive!" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Need at least $sourceUsedGB GB, only $targetFreeGB GB available." -ForegroundColor Red
+    Write-Host "Connect a larger external drive and update Paths.FTK in config." -ForegroundColor Red
+    Write-Host "==========================================="
     exit 1
+} elseif ($targetFreeGB -lt $sourceTotalGB) {
+    Write-Host "  Status:            " -NoNewline
+    Write-Host "WARNING - May not fit full disk" -ForegroundColor Yellow
+} else {
+    Write-Host "  Status:            " -NoNewline
+    Write-Host "SUFFICIENT" -ForegroundColor Green
 }
+
+Write-Host ""
+Write-Host "ESTIMATED RUN TIME" -ForegroundColor Yellow
+Write-Host "  Duration:          2 - 8 hours"
+Write-Host "  Timeout:           72 hours"
+Write-Host ""
+Write-Host "COMPRESSION" -ForegroundColor Yellow
+Write-Host "  Level:             $CompressionLevel"
+Write-Host ""
+Write-Host "OUTPUT FILE" -ForegroundColor Yellow
+Write-Host "  $(Split-Path $ZipFile -Leaf)"
+Write-Host ""
+Write-Host "STATUS: " -NoNewline
+Write-Host "OK - Ready to image" -ForegroundColor Green
+Write-Host "==========================================="
+Write-Host ""
+Write-Host "Press any key to start FTK imaging, or Ctrl+C to cancel..." -ForegroundColor Yellow
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+Write-Host ""
 
 
 # =============================================================================
-# STEP 6: Build command arguments
+# STEP 8: Build command arguments
 # =============================================================================
 # FTK Imager command format: ftkimager.exe [source] [dest] [options]
 
@@ -120,7 +262,7 @@ Write-Log "Output will be: $ImageBase.raw (may be split into multiple files)"
 
 
 # =============================================================================
-# STEP 7: Run FTK with heartbeat monitoring
+# STEP 9: Run FTK with heartbeat monitoring
 # =============================================================================
 
 Write-Log "Starting disk imaging (this will take 2-8 hours)..."
@@ -141,7 +283,7 @@ if (-not $result.Success) {
 
 
 # =============================================================================
-# STEP 8: Find and compress disk image files
+# STEP 10: Find and compress disk image files
 # =============================================================================
 # FTK may create multiple files: .raw, .raw.001, .raw.002, etc.
 
@@ -156,7 +298,7 @@ if ($imageFiles) {
         }
         
         # Compress all disk image segments together
-        Compress-Archive -Path $imageFiles.FullName -DestinationPath $ZipFile -Force
+        Compress-Archive -Path $imageFiles.FullName -DestinationPath $ZipFile -CompressionLevel $CompressionLevel -Force
         
         $zipSize = [math]::Round((Get-Item $ZipFile).Length / 1GB, 2)
         Write-Log "Created: $ZipFile ($zipSize GB)" "SUCCESS"
@@ -172,7 +314,7 @@ if ($imageFiles) {
 
 
 # =============================================================================
-# STEP 9: Upload to MinIO
+# STEP 11: Upload to MinIO
 # =============================================================================
 
 Write-Log "Uploading to MinIO (this may take a while for large images)..."

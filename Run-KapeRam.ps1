@@ -247,7 +247,7 @@ if (Test-Path $OutputFolder) {
             Remove-Item $ZipFile -Force
         }
         
-        Compress-Archive -Path "$OutputFolder\*" -DestinationPath $ZipFile -Force
+        Compress-Archive -Path "$OutputFolder\*" -DestinationPath $ZipFile -CompressionLevel $CompressionLevel -Force
         
         $zipSize = [math]::Round((Get-Item $ZipFile).Length / 1MB, 2)
         Write-Log "Created: $ZipFile ($zipSize MB)" "SUCCESS"
@@ -263,7 +263,7 @@ if (Test-Path $OutputFolder) {
 
 
 # =============================================================================
-# STEP 10: Upload to MinIO
+# STEP 11: Upload to MinIO
 # =============================================================================
 
 Write-Log "Uploading to MinIO..."
