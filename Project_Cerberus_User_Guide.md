@@ -247,4 +247,32 @@ mc put -r "C:\Evidence\HOSTNAME-THOR" "minio\upload" --insecure
 - Evidence is always preserved locally even if upload fails
 
 ---
-*Project Cerberus SOP v2.4 - Updated Jan 2026*
+
+## 6. Documentation & Resources
+
+### Tool Documentation
+| Tool | Documentation |
+|------|---------------|
+| **THOR Lite** | https://www.nextron-systems.com/thor-lite/ |
+| **THOR Manual** | https://thor-manual.nextron-systems.com/ |
+| **KAPE** | https://ericzimmerman.github.io/KapeDocs/ |
+| **KAPE Targets/Modules** | https://github.com/EricZimmerman/KapeFiles |
+| **FTK Imager** | https://www.exterro.com/digital-forensics-software/ftk-imager |
+| **MinIO Client (mc)** | https://min.io/docs/minio/linux/reference/minio-mc.html |
+| **MinIO Console** | https://min.io/docs/minio/linux/administration/minio-console.html |
+
+### Elastic Stack
+| Component | Documentation |
+|-----------|---------------|
+| **Elastic Defend** | https://www.elastic.co/docs/solutions/security/endpoint |
+| **Response Actions** | https://www.elastic.co/docs/solutions/security/endpoint/response-actions |
+| **Elastic Agent** | https://www.elastic.co/docs/reference/fleet/elastic-agent |
+
+### PowerShell References
+| Cmdlet | Documentation |
+|--------|---------------|
+| **Compress-Archive** | https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.archive/compress-archive |
+| **Test-NetConnection** | https://learn.microsoft.com/en-us/powershell/module/nettcpip/test-netconnection |
+
+---
+*Project Cerberus SOP v2.5 - Updated Jan 2026*

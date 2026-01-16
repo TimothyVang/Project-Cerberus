@@ -234,24 +234,46 @@ Evidence/
 
 ### Execution Logs
 
-All operations are logged to: `Logs\cerberus-YYYYMMDD.log`
+Logs are organized **per-host** with separate files **per-operation**:
+
+```text
+Logs/
+  HOSTNAME-DOMAIN/
+    index.txt                                      # Summary of all operations
+    HOSTNAME-DOMAIN-THOR_20260116_103045.log      # THOR scan log
+    HOSTNAME-DOMAIN-UPLOAD_20260116_110030.log    # Separate upload log
+    HOSTNAME-DOMAIN-KAPE-Disk_20260116_143022.log # KAPE disk artifacts
+    HOSTNAME-DOMAIN-KAPE-RAM_20260116_150000.log  # RAM capture
+```
 
 **Retrieve logs remotely:**
 
 ```bash
-# Get today's log (replace date)
-get-file --path "C:/ProgramData/Google/Logs/cerberus-20260108.log"
+# List all log folders (one per host)
+execute --command "dir C:\ProgramData\Google\Project_Cerberus\Logs"
 
-# List all available logs
-execute --command "dir C:\ProgramData\Google\Logs\cerberus-*.log"
+# Get operation index for a host
+get-file --path "C:/ProgramData/Google/Project_Cerberus/Logs/HOSTNAME-DOMAIN/index.txt"
+
+# Get specific operation log
+get-file --path "C:/ProgramData/Google/Project_Cerberus/Logs/HOSTNAME-DOMAIN/HOSTNAME-DOMAIN-THOR_20260116_103045.log"
 ```
 
 **Log format:**
 
 ```text
-[2026-01-08 14:23:45] [INFO] Starting THOR Scan (Remote Mode)...
-[2026-01-08 14:25:12] [SUCCESS] Upload Complete: Evidence\HOSTNAME-THOR
-[2026-01-08 14:25:13] [ERROR] THOR failed with exit code: 1
+[2026-01-16 10:30:45] [INFO] Starting THOR Scan (Remote Mode)...
+[2026-01-16 11:25:12] [SUCCESS] Upload Complete: Evidence\HOSTNAME-THOR.zip
+[2026-01-16 11:25:13] [ERROR] THOR failed with exit code: 1
+```
+
+**Index file format** (`index.txt`):
+```text
+================================================================================
+PROJECT CERBERUS - Operation Index for DESKTOP-PC1-WORKGROUP
+================================================================================
+2026-01-16 10:30:45 | THOR      | DESKTOP-PC1-WORKGROUP-THOR_20260116_103045.log
+2026-01-16 11:00:30 | UPLOAD    | DESKTOP-PC1-WORKGROUP-UPLOAD_20260116_110030.log
 ```
 
 ### Common Issues
@@ -277,6 +299,34 @@ execute --command "dir C:\ProgramData\Google\Logs\cerberus-*.log"
 - Review exit codes in logs
 
 **See `Logs/README.md` for detailed logging information.**
+
+---
+
+## Documentation & Resources
+
+### Tool Documentation
+| Tool | Documentation |
+|------|---------------|
+| **THOR Lite** | https://www.nextron-systems.com/thor-lite/ |
+| **THOR Manual** | https://thor-manual.nextron-systems.com/ |
+| **KAPE** | https://ericzimmerman.github.io/KapeDocs/ |
+| **KAPE Targets/Modules** | https://github.com/EricZimmerman/KapeFiles |
+| **FTK Imager** | https://www.exterro.com/digital-forensics-software/ftk-imager |
+| **MinIO Client (mc)** | https://min.io/docs/minio/linux/reference/minio-mc.html |
+| **MinIO Console** | https://min.io/docs/minio/linux/administration/minio-console.html |
+
+### Elastic Stack
+| Component | Documentation |
+|-----------|---------------|
+| **Elastic Defend** | https://www.elastic.co/docs/solutions/security/endpoint |
+| **Response Actions** | https://www.elastic.co/docs/solutions/security/endpoint/response-actions |
+| **Elastic Agent** | https://www.elastic.co/docs/reference/fleet/elastic-agent |
+
+### PowerShell References
+| Cmdlet | Documentation |
+|--------|---------------|
+| **Compress-Archive** | https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.archive/compress-archive |
+| **Test-NetConnection** | https://learn.microsoft.com/en-us/powershell/module/nettcpip/test-netconnection |
 
 ---
 *See `Project_Cerberus_User_Guide.md` for a detailed visual field manual.*
