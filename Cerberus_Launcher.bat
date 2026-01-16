@@ -28,8 +28,9 @@ set "BIN=%KIT_ROOT%Bin"
 set "EVIDENCE=%KIT_ROOT%Evidence"
 set "LOGS=%KIT_ROOT%Logs"
 
-:: Define KAPE target variable
-set "SANS_Triage=!SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS"
+:: Define KAPE target variables (use ^! to escape exclamation mark for delayed expansion)
+set "KAPE_QUICK=^!SANS_Triage"
+set "KAPE_FULL=^!SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS"
 
 :: Create Evidence folder if missing
 if not exist "%EVIDENCE%" (
@@ -296,14 +297,14 @@ if /I "!KChoice!"=="1" (
     echo   QUICK TRIAGE COLLECTION
     echo   ====================================================================
     echo.
-    echo   Collecting: !SANS_Triage
+    echo   Collecting: ^!SANS_Triage
     echo   Output: %EVIDENCE%\%COMPUTERNAME%_KAPE_Quick
     echo.
     echo   [INFO] Starting KAPE...
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Quick" --tflush --target !SANS_Triage --gui
+    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Quick" --tflush --target ^!SANS_Triage --gui
 
     echo.
     echo   ====================================================================
@@ -323,7 +324,7 @@ if /I "!KChoice!"=="2" (
     echo   FULL TRIAGE COLLECTION
     echo   ====================================================================
     echo.
-    echo   Collecting: !SANS_Triage + IIS + Exchange + Memory + MOF + BITS
+    echo   Collecting: ^!SANS_Triage + IIS + Exchange + Memory + MOF + BITS
     echo   Output: %EVIDENCE%\%COMPUTERNAME%_KAPE_Full
     echo.
     echo   [INFO] This may take 15-30 minutes...
