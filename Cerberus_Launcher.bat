@@ -28,10 +28,6 @@ set "BIN=%KIT_ROOT%Bin"
 set "EVIDENCE=%KIT_ROOT%Evidence"
 set "LOGS=%KIT_ROOT%Logs"
 
-:: Define KAPE target variables (use ^! to escape exclamation mark for delayed expansion)
-set "KAPE_QUICK=^!SANS_Triage"
-set "KAPE_FULL=^!SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS"
-
 :: Create Evidence folder if missing
 if not exist "%EVIDENCE%" (
     mkdir "%EVIDENCE%"
@@ -245,31 +241,23 @@ echo   ========================================================================
 echo.
 echo   WHAT KIND OF EVIDENCE DO YOU WANT TO COLLECT?
 echo.
-echo   [1] Quick Collection (RECOMMENDED - Fast and Essential)
+echo   [1] Full Collection (RECOMMENDED - Everything + Server Files)
 echo       ^^
-echo       ^|__ WHAT IT COLLECTS: The most important evidence files
-echo       ^|__ INCLUDES: Registry files, Windows event logs, prefetch,
-echo       ^|             file system journal, user activity traces
-echo       ^|__ TIME: 5-10 minutes  ^|  SPACE: 500MB - 2GB
-echo       ^|__ BEST FOR: Quick incident response, most cases
-echo.
-echo   [2] Full Collection (Everything + Server Files)
-echo       ^^
-echo       ^|__ WHAT IT COLLECTS: Everything from Quick + server logs
-echo       ^|__ INCLUDES: All Quick items PLUS IIS logs, Exchange data,
-echo       ^|             memory files, MOF files, BITS transfers
+echo       ^|__ WHAT IT COLLECTS: Comprehensive forensic artifacts + server logs
+echo       ^|__ INCLUDES: Registry, event logs, prefetch, MFT, IIS logs,
+echo       ^|             Exchange data, memory files, MOF files, BITS transfers
 echo       ^|__ TIME: 15-30 minutes  ^|  SPACE: 2GB - 5GB
 echo       ^|__ BEST FOR: Servers, comprehensive investigations
 echo.
-echo   [3] Disk-Only Collection (Files without RAM capture)
+echo   [2] Disk-Only Collection (Files without RAM capture)
 echo       ^^
-echo       ^|__ WHAT IT COLLECTS: Same as Quick but NO memory files
+echo       ^|__ WHAT IT COLLECTS: Forensic artifacts WITHOUT memory files
 echo       ^|__ INCLUDES: Registry, event logs, prefetch, MFT, USN journal
 echo       ^|__ EXCLUDES: Memory/RAM files (pagefile, hiberfil, swapfile)
 echo       ^|__ TIME: 3-8 minutes  ^|  SPACE: 300MB - 1.5GB (smaller)
 echo       ^|__ BEST FOR: When you don't need memory analysis
 echo.
-echo   [4] RAM Memory Capture (Capture what's running NOW)
+echo   [3] RAM Memory Capture (Capture what's running NOW)
 echo       ^^
 echo       ^|__ WHAT IT DOES: Saves a copy of everything in RAM memory
 echo       ^|__ CAPTURES: Running programs, passwords in memory, malware
@@ -277,15 +265,10 @@ echo       ^|__ TIME: 5-15 minutes  ^|  SPACE: Same size as your RAM
 echo       ^|__ BEST FOR: Catching malware in memory, volatile data
 echo       ^|__ EXAMPLE: If you have 8GB RAM, this creates an 8GB file
 echo.
-echo   [5] Custom Targets (For experts who know what they want)
-echo       ^^
-echo       ^|__ Lets you manually type which evidence types to collect
-echo       ^|__ Requires knowledge of KAPE target names
-echo.
 echo   [B] Back - Return to tools menu
 echo.
 echo   ========================================================================
-echo   HOW TO USE: Type a number (1-5) and press ENTER
+echo   HOW TO USE: Type a number (1-3) and press ENTER
 echo   ========================================================================
 set "KChoice="
 set /p "KChoice=[?] Enter your choice: "
@@ -294,44 +277,17 @@ if /I "!KChoice!"=="1" (
     cls
     echo.
     echo   ====================================================================
-    echo   QUICK TRIAGE COLLECTION
-    echo   ====================================================================
-    echo.
-    echo   Collecting: ^!SANS_Triage
-    echo   Output: %EVIDENCE%\%COMPUTERNAME%_KAPE_Quick
-    echo.
-    echo   [INFO] Starting KAPE...
-    echo   [INFO] KAPE GUI will open in a new window.
-    echo.
-
-    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Quick" --tflush --target ^!SANS_Triage --gui
-
-    echo.
-    echo   ====================================================================
-    echo   [SUCCESS] Quick Triage Complete!
-    echo   ====================================================================
-    echo.
-    echo   Evidence Location: %EVIDENCE%\%COMPUTERNAME%_KAPE_Quick
-    echo.
-    pause
-    goto KAPE_MENU
-)
-
-if /I "!KChoice!"=="2" (
-    cls
-    echo.
-    echo   ====================================================================
     echo   FULL TRIAGE COLLECTION
     echo   ====================================================================
     echo.
-    echo   Collecting: ^!SANS_Triage + IIS + Exchange + Memory + MOF + BITS
+    echo   Collecting: SANS_Triage + IIS + Exchange + Memory + MOF + BITS
     echo   Output: %EVIDENCE%\%COMPUTERNAME%_KAPE_Full
     echo.
     echo   [INFO] This may take 15-30 minutes...
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Full" --tflush --target ^!SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --gui
+    call :RUN_KAPE_FULL "%EVIDENCE%\%COMPUTERNAME%_KAPE_Full"
 
     echo.
     echo   ====================================================================
@@ -344,17 +300,17 @@ if /I "!KChoice!"=="2" (
     goto KAPE_MENU
 )
 
-if /I "!KChoice!"=="3" (
+if /I "!KChoice!"=="2" (
     cls
     echo.
     echo   ====================================================================
     echo   DISK-ONLY COLLECTION (No Memory Files)
     echo   ====================================================================
     echo.
-    echo   Collecting: ^!SANS_Triage (excluding MemoryFiles)
+    echo   Collecting: SANS_Triage (excluding MemoryFiles)
     echo   Output: %EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly
     echo.
-    echo   [INFO] This collects the same files as Quick Triage but
+    echo   [INFO] This collects forensic artifacts but
     echo   [INFO] EXCLUDES large memory files (pagefile, hiberfil, swapfile)
     echo   [INFO] This is faster and uses less disk space.
     echo.
@@ -368,7 +324,7 @@ if /I "!KChoice!"=="3" (
     echo   [INFO] KAPE GUI will open in a new window.
     echo.
 
-    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly" --tflush --target ^!SANS_Triage --gui
+    call :RUN_KAPE_DISKONLY "%EVIDENCE%\%COMPUTERNAME%_KAPE_DiskOnly"
 
     echo.
     echo   ====================================================================
@@ -381,7 +337,7 @@ if /I "!KChoice!"=="3" (
     goto KAPE_MENU
 )
 
-if /I "!KChoice!"=="4" (
+if /I "!KChoice!"=="3" (
     cls
     echo.
     echo   ====================================================================
@@ -412,56 +368,6 @@ if /I "!KChoice!"=="4" (
     echo   ====================================================================
     echo.
     echo   Memory Image: %EVIDENCE%\%COMPUTERNAME%_RAM
-    echo.
-    pause
-    goto KAPE_MENU
-)
-
-if /I "!KChoice!"=="5" (
-    cls
-    echo.
-    echo   ====================================================================
-    echo   CUSTOM TARGET COLLECTION
-    echo   ====================================================================
-    echo.
-    echo   Enter KAPE targets separated by commas (no spaces).
-    echo.
-    echo   Common targets:
-    echo   - ^!SANS_Triage        Registry, logs, prefetch, MFT
-    echo   - WebBrowsers         All browser history/cache
-    echo   - RegistryHives       Registry hives only
-    echo   - CloudStorage_All    OneDrive, Dropbox, etc.
-    echo   - EventLogs           Windows Event Logs
-    echo   - $MFT                Master File Table
-    echo.
-    echo   Example: ^!SANS_Triage,WebBrowsers,CloudStorage_All
-    echo.
-    echo   ====================================================================
-    echo.
-    set "CustomTargets="
-    set /p "CustomTargets=Enter target list: "
-
-    if "!CustomTargets!"=="" (
-        echo.
-        echo [ERROR] No targets entered.
-        pause
-        goto KAPE_MENU
-    )
-
-    echo.
-    echo   [INFO] Custom Collection: !CustomTargets!
-    echo   [INFO] Output: %EVIDENCE%\%COMPUTERNAME%_KAPE_Custom
-    echo   [INFO] KAPE GUI will open in a new window.
-    echo.
-
-    "%BIN%\KAPE\kape.exe" --tsource C: --tdest "%EVIDENCE%\%COMPUTERNAME%_KAPE_Custom" --tflush --target !CustomTargets! --gui
-
-    echo.
-    echo   ====================================================================
-    echo   [SUCCESS] Custom Collection Complete!
-    echo   ====================================================================
-    echo.
-    echo   Evidence Location: %EVIDENCE%\%COMPUTERNAME%_KAPE_Custom
     echo.
     pause
     goto KAPE_MENU
@@ -838,3 +744,18 @@ echo   Your forensic evidence is safe and untouched.
 echo.
 pause
 goto MAIN_MENU
+
+:: ============================================================================
+::  KAPE SUBROUTINES (Handle ! character in target names)
+:: ============================================================================
+:: Use ^^! double escape: first ^ escapes during parse, second escapes delayed expansion
+:: Result: KAPE receives literal "!SANS_Triage" as the target name
+
+:RUN_KAPE_FULL
+"%BIN%\KAPE\kape.exe" --tsource C: --tdest "%~1" --tflush --target ^^!SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --gui
+goto :eof
+
+:RUN_KAPE_DISKONLY
+"%BIN%\KAPE\kape.exe" --tsource C: --tdest "%~1" --tflush --target ^^!SANS_Triage --gui
+goto :eof
+

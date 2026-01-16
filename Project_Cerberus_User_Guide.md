@@ -255,8 +255,10 @@ mc put -r "C:\Evidence\HOSTNAME-THOR" "minio\upload" --insecure
 |------|---------------|
 | **THOR Lite** | https://www.nextron-systems.com/thor-lite/ |
 | **THOR Manual** | https://thor-manual.nextron-systems.com/ |
-| **KAPE** | https://ericzimmerman.github.io/KapeDocs/ |
+| **KAPE Download** | https://www.kroll.com/en/insights/publications/cyber/kroll-artifact-parser-extractor-kape |
+| **KAPE Manual** | https://ericzimmerman.github.io/KapeDocs/ |
 | **KAPE Targets/Modules** | https://github.com/EricZimmerman/KapeFiles |
+| **KAPE Tutorial** | https://aboutdfir.com/toolsandartifacts/windows/kape/ |
 | **FTK Imager** | https://www.exterro.com/digital-forensics-software/ftk-imager |
 | **MinIO Client (mc)** | https://min.io/docs/minio/linux/reference/minio-mc.html |
 | **MinIO Console** | https://min.io/docs/minio/linux/administration/minio-console.html |
