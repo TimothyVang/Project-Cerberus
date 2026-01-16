@@ -8,7 +8,7 @@
 
 param (
     [Parameter(Mandatory = $false)]
-    [ValidateSet("THOR", "KAPE-TRIAGE", "KAPE-RAM", "FTK")]
+    [ValidateSet("THOR", "KAPE-DISK", "KAPE-RAM", "FTK")]
     [string]$Tool = "THOR",  # Default to Thor if not specified
 
     [switch]$UploadOnly  # If set, skips scan and just tries to upload existing evidence
@@ -376,7 +376,7 @@ else {
 
     # Step 4: Check if we have enough space for large operations
     # -lt means "less than"
-    if ($Tool -eq "FTK" -or $Tool -eq "KAPE-TRIAGE") {
+    if ($Tool -eq "FTK" -or $Tool -eq "KAPE-DISK") {
         if ($FreeGB -lt 10) {
             Write-Log "ERROR: Insufficient disk space ($FreeGB GB). Need at least 10 GB for $Tool" "ERROR"
             exit 1  # Exit code 1 means "error" (0 would mean "success")
@@ -482,21 +482,21 @@ else {
         Write-Log "Thor Scan Finished with exit code: $exitCode"
     }
     # =============================================================================
-    # TOOL EXECUTION - KAPE TRIAGE (Forensic File Collector)
+    # TOOL EXECUTION - KAPE DISK (Forensic File Collector)
     # =============================================================================
-    elseif ($Tool -eq "KAPE-TRIAGE") {
-        Write-Log "Starting KAPE Triage (Files/Artifacts)..."
+    elseif ($Tool -eq "KAPE-DISK") {
+        Write-Log "Starting KAPE Disk Collection (Files/Artifacts)..."
         $KapeExe = "$BinDir\KAPE\kape.exe"
-        $KapeOutput = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage"
+        $KapeOutput = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Disk"
 
         if (-not (Test-Path $KapeExe)) {
             Write-Log "KAPE binary not found at $KapeExe" "ERROR"
             $scriptSuccess = $false
-            $failedComponents += "KAPE-TRIAGE-Missing"
+            $failedComponents += "KAPE-DISK-Missing"
             # Skip KAPE execution but continue to upload phase
         } else {
             # Build arguments using config
-            $KapeArgs = $Config.Tools.Kape.TriageArgs -replace "\$\{Output\}", "`"$KapeOutput`""
+            $KapeArgs = $Config.Tools.Kape.DiskArgs -replace "\$\{Output\}", "`"$KapeOutput`""
 
             Write-Log "[KAPE] Command: $KapeExe $KapeArgs"
             Write-Log "[KAPE] Output: $KapeOutput"
@@ -519,7 +519,7 @@ else {
                 $kapeProcess.Kill()
                 Write-Log "[ERROR] KAPE collection timeout" "ERROR"
                 $scriptSuccess = $false
-                $failedComponents += "KAPE-TRIAGE-Timeout"
+                $failedComponents += "KAPE-DISK-Timeout"
                 break  # Exit monitoring loop but continue to upload phase
             }
 
@@ -544,11 +544,11 @@ else {
         } else {
             Write-Log "[ERROR] KAPE exited with code: $exitCode (may be partial collection)" "ERROR"
             $scriptSuccess = $false
-            $failedComponents += "KAPE-TRIAGE"
+            $failedComponents += "KAPE-DISK"
         }
 
-        Write-Log "KAPE Triage Finished."
-        }  # End of else block for KAPE-TRIAGE execution
+        Write-Log "KAPE Disk Collection Finished."
+        }  # End of else block for KAPE-DISK execution
     }
     # =============================================================================
     # TOOL EXECUTION - KAPE RAM (Memory Capture)
@@ -711,9 +711,9 @@ else {
         $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-THOR"
         $zipPath = Get-ZipFileName -Tool "THOR" -Directory $EvidenceDir
     }
-    elseif ($Tool -eq "KAPE-TRIAGE") {
-        $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Triage"
-        $zipPath = Get-ZipFileName -Tool "KAPE-Triage" -Directory $EvidenceDir
+    elseif ($Tool -eq "KAPE-DISK") {
+        $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-KAPE-Disk"
+        $zipPath = Get-ZipFileName -Tool "KAPE-Disk" -Directory $EvidenceDir
     }
     elseif ($Tool -eq "KAPE-RAM") {
         $evidenceFolder = "$EvidenceDir\$env:COMPUTERNAME-RAM"

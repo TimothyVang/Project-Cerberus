@@ -1,8 +1,8 @@
 {
     "MinIO": {
-        "Server": "your-minio-server:8443",
-        "AccessKey": "your-access-key-here",
-        "SecretKey": "your-secret-key-here",
+        "Server": "localhost:8443",
+        "AccessKey": "minioadmin",
+        "SecretKey": "minioadmin123",
         "Bucket": "upload"
     },
     "Paths": {
@@ -18,7 +18,7 @@
             "Args": "--utc --nothordb"
         },
         "Kape": {
-            "TriageArgs": "--tsource C: --tdest ${Output} --tflush --target !SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --ifw --vhdx TargetsOutput_%m",
+            "DiskArgs": "--tsource C: --tdest ${Output} --tflush --target !SANS_Triage,IISLogFiles,Exchange,ExchangeCve-2021-26855,MemoryFiles,MOF,BITS --ifw --vhdx TargetsOutput_%m",
             "RamArgs": "--msource C:\\ --mdest ${Output} --zm true --module MagnetForensics_RAMCapture"
         },
         "FTK": {
