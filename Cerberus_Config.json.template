@@ -10,11 +10,6 @@
         "FTK": "",
         "_FTK_WARNING": "REQUIRED FOR FTK: Set to external drive path (e.g., E:\\Evidence). FTK disk images are 100GB-2TB and WILL crash your system if saved locally!"
     },
-    "Compression": {
-        "Level": "Optimal",
-        "_Options": "NoCompression | Fastest | Optimal",
-        "_Note": "Optimal=smallest files (slower), Fastest=quick but larger, NoCompression=no compression"
-    },
     "Tools": {
         "Thor": {
             "Args": "--utc --nothordb"
@@ -25,6 +20,8 @@
         },
         "FTK": {
             "Args": "--compress 9 --frag 1TB",
+            "_Compress": "Compression: 0=none, 1=fast, 9=best. Uses best compression by default.",
+            "_Frag": "Fragment size: K/M/G/T (e.g., 1TB splits into 1TB chunks)",
             "_Note": "FTK REQUIRES Paths.FTK to be set to an external drive!"
         }
     }

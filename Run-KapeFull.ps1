@@ -100,13 +100,6 @@ $MemOutputFolder = "$EvidenceFolder\$env:COMPUTERNAME-KAPE-Mem"
 $DiskZipFile = Get-ZipFileName -Tool "KAPE-Disk" -Directory $EvidenceFolder
 $MemZipFile = Get-ZipFileName -Tool "KAPE-Mem" -Directory $EvidenceFolder
 
-# Get compression level from config (default to Optimal)
-$CompressionLevel = if ($Config.Compression -and $Config.Compression.Level) { 
-    $Config.Compression.Level 
-} else { 
-    "Optimal" 
-}
-
 
 # =============================================================================
 # STEP 4: Check KAPE exists
@@ -193,9 +186,6 @@ Write-Host "  Disk Collection:   15 - 45 minutes"
 Write-Host "  Memory Capture:    5 - 15 minutes"
 Write-Host "  Total:             20 - 60 minutes"
 Write-Host "  Timeout:           24 hours"
-Write-Host ""
-Write-Host "COMPRESSION" -ForegroundColor Yellow
-Write-Host "  Level:             $CompressionLevel"
 Write-Host ""
 Write-Host "OUTPUT FILES" -ForegroundColor Yellow
 Write-Host "  1. $(Split-Path $DiskZipFile -Leaf) (~$estimatedDiskZipGB GB)"
@@ -291,7 +281,7 @@ if (Test-Path $DiskOutputFolder) {
                 Remove-Item $DiskZipFile -Force
             }
             
-            Compress-Archive -Path "$DiskOutputFolder\*" -DestinationPath $DiskZipFile -CompressionLevel $CompressionLevel -Force
+            Compress-Archive -Path "$DiskOutputFolder\*" -DestinationPath $DiskZipFile -Force
             
             $zipSize = [math]::Round((Get-Item $DiskZipFile).Length / 1MB, 2)
             Write-Log "Created: $DiskZipFile ($zipSize MB)" "SUCCESS"
@@ -323,7 +313,7 @@ if (Test-Path $MemOutputFolder) {
                 Remove-Item $MemZipFile -Force
             }
             
-            Compress-Archive -Path "$MemOutputFolder\*" -DestinationPath $MemZipFile -CompressionLevel $CompressionLevel -Force
+            Compress-Archive -Path "$MemOutputFolder\*" -DestinationPath $MemZipFile -Force
             
             $zipSize = [math]::Round((Get-Item $MemZipFile).Length / 1MB, 2)
             Write-Log "Created: $MemZipFile ($zipSize MB)" "SUCCESS"

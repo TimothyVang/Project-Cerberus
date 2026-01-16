@@ -9,9 +9,6 @@
         "EvidenceRoot": "${ScriptRoot}\\Evidence",
         "FTK": ""
     },
-    "Compression": {
-        "Level": "Optimal"
-    },
     "Tools": {
         "Thor": {
             "Args": "--utc --nothordb"

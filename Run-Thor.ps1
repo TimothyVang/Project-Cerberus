@@ -84,13 +84,6 @@ $EvidenceFolder = "$PSScriptRoot\Evidence"
 $OutputFolder = "$EvidenceFolder\$env:COMPUTERNAME-THOR"
 $ZipFile = Get-ZipFileName -Tool "THOR" -Directory $EvidenceFolder
 
-# Get compression level from config (default to Optimal)
-$CompressionLevel = if ($Config.Compression -and $Config.Compression.Level) { 
-    $Config.Compression.Level 
-} else { 
-    "Optimal" 
-}
-
 
 # =============================================================================
 # STEP 4: Check THOR exists
@@ -167,9 +160,6 @@ Write-Host "ESTIMATED RUN TIME" -ForegroundColor Yellow
 Write-Host "  Duration:          1 - 4 hours"
 Write-Host "  Timeout:           48 hours"
 Write-Host ""
-Write-Host "COMPRESSION" -ForegroundColor Yellow
-Write-Host "  Level:             $CompressionLevel"
-Write-Host ""
 Write-Host "OUTPUT FILE" -ForegroundColor Yellow
 Write-Host "  $(Split-Path $ZipFile -Leaf)"
 Write-Host ""
@@ -234,7 +224,7 @@ if (Test-Path $OutputFolder) {
             Remove-Item $ZipFile -Force
         }
         
-        Compress-Archive -Path "$OutputFolder\*" -DestinationPath $ZipFile -CompressionLevel $CompressionLevel -Force
+        Compress-Archive -Path "$OutputFolder\*" -DestinationPath $ZipFile -Force
         
         $zipSize = [math]::Round((Get-Item $ZipFile).Length / 1MB, 2)
         Write-Log "Created: $ZipFile ($zipSize MB)" "SUCCESS"

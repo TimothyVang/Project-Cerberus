@@ -2,9 +2,19 @@
 # RUN-FTK.PS1 - Creates a full disk image with FTK Imager
 # =============================================================================
 #
-# USAGE: .\Run-Ftk.ps1
+# USAGE: 
+#   .\Run-Ftk.ps1                    # Uses path from config
+#   .\Run-Ftk.ps1 -OutputPath E:     # Saves to E:\Evidence
+#   .\Run-Ftk.ps1 -OutputPath E:\Images  # Saves to E:\Images
 #
 # WHAT THIS SCRIPT DOES:
+
+param(
+    [Parameter(Mandatory=$false)]
+    [string]$OutputPath
+)
+
+#
 #   1. Load configuration from Cerberus_Config.json
 #   2. REQUIRE external drive (Paths.FTK must be configured!)
 #   3. Show pre-flight check with source and target drive info
@@ -92,24 +102,34 @@ if (-not (Test-Path $FtkExe)) {
     $FtkExe = "$PSScriptRoot\$($PATHS.FtkX86)"
 }
 
-# Get compression level from config (default to Optimal)
-$CompressionLevel = if ($Config.Compression -and $Config.Compression.Level) { 
-    $Config.Compression.Level 
-} else { 
-    "Optimal" 
-}
-
 # =============================================================================
-# STEP 4: REQUIRE external drive - FTK images are too large for local storage!
+# STEP 4: Determine output path - command line > config > error
 # =============================================================================
+# Priority: 1) -OutputPath parameter  2) Config Paths.FTK  3) Error
 
-# Get source drive info for error display
+# Get source drive info for space calculations
 $sourceDrive = Get-WmiObject Win32_LogicalDisk -Filter "DeviceID='C:'"
 $sourceTotalGB = [math]::Round($sourceDrive.Size / 1GB, 2)
 $sourceUsedGB = [math]::Round(($sourceDrive.Size - $sourceDrive.FreeSpace) / 1GB, 2)
 $sourceFreeGB = [math]::Round($sourceDrive.FreeSpace / 1GB, 2)
 
-if (-not $Config.Paths.FTK -or $Config.Paths.FTK -eq "") {
+# Determine output folder based on priority
+if ($OutputPath) {
+    # Command-line parameter provided
+    # If just a drive letter (e.g., "E:" or "E"), append \Evidence
+    if ($OutputPath -match '^[A-Za-z]:?$') {
+        $driveLetter = $OutputPath.TrimEnd(':')
+        $OutputFolder = "${driveLetter}:\Evidence"
+    } else {
+        $OutputFolder = $OutputPath
+    }
+    Write-Log "Using command-line output path: $OutputFolder"
+} elseif ($Config.Paths.FTK -and $Config.Paths.FTK -ne "") {
+    # Config path provided
+    $OutputFolder = $Config.Paths.FTK -replace '\$\{ComputerName\}', $env:COMPUTERNAME
+    Write-Log "Using config output path: $OutputFolder"
+} else {
+    # No path configured - show error
     Write-Host ""
     Write-Host "==========================================="  -ForegroundColor Red
     Write-Host "[ERROR] FTK OUTPUT PATH NOT CONFIGURED" -ForegroundColor Red
@@ -128,22 +148,18 @@ if (-not $Config.Paths.FTK -or $Config.Paths.FTK -eq "") {
     Write-Host "  Maximum:           $sourceTotalGB GB (full disk)"
     Write-Host ""
     Write-Host "HOW TO FIX:" -ForegroundColor Cyan
-    Write-Host "  1. Connect an external USB drive (1TB+ recommended)"
-    Write-Host "  2. Edit Cerberus_Config.json"
-    Write-Host "  3. Set Paths.FTK to the external drive path:"
+    Write-Host "  Option 1: Pass output path as parameter:"
+    Write-Host "    .\Run-Ftk.ps1 -OutputPath E:" -ForegroundColor Gray
+    Write-Host "    .\Run-Ftk.ps1 -OutputPath E:\Evidence" -ForegroundColor Gray
     Write-Host ""
+    Write-Host "  Option 2: Configure in Cerberus_Config.json:"
     Write-Host '     "Paths": {' -ForegroundColor Gray
     Write-Host '         "FTK": "E:\\Cerberus_Evidence"' -ForegroundColor Gray
     Write-Host '     }' -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  4. Run this script again"
-    Write-Host ""
     Write-Host "==========================================="  -ForegroundColor Red
     exit 1
 }
-
-# FTK path is configured - use it
-$OutputFolder = $Config.Paths.FTK -replace '\$\{ComputerName\}', $env:COMPUTERNAME
 
 $ImageBase = "$OutputFolder\$env:COMPUTERNAME-Disk"
 $ZipFile = Get-ZipFileName -Tool "FTK" -Directory $OutputFolder
@@ -235,9 +251,6 @@ Write-Host "ESTIMATED RUN TIME" -ForegroundColor Yellow
 Write-Host "  Duration:          2 - 8 hours"
 Write-Host "  Timeout:           72 hours"
 Write-Host ""
-Write-Host "COMPRESSION" -ForegroundColor Yellow
-Write-Host "  Level:             $CompressionLevel"
-Write-Host ""
 Write-Host "OUTPUT FILE" -ForegroundColor Yellow
 Write-Host "  $(Split-Path $ZipFile -Leaf)"
 Write-Host ""
@@ -298,7 +311,7 @@ if ($imageFiles) {
         }
         
         # Compress all disk image segments together
-        Compress-Archive -Path $imageFiles.FullName -DestinationPath $ZipFile -CompressionLevel $CompressionLevel -Force
+        Compress-Archive -Path $imageFiles.FullName -DestinationPath $ZipFile -Force
         
         $zipSize = [math]::Round((Get-Item $ZipFile).Length / 1GB, 2)
         Write-Log "Created: $ZipFile ($zipSize GB)" "SUCCESS"
