@@ -24,6 +24,9 @@
 # OUTPUT FILE NAMING:
 #   HOSTNAME-DOMAIN-THOR.zip (e.g., DESKTOP-PC1-WORKGROUP-THOR.zip)
 #
+# LOG FILE:
+#   Logs/{HOSTNAME}-{DOMAIN}/{HOSTNAME}-{DOMAIN}-THOR_{TIMESTAMP}.log
+#
 # =============================================================================
 
 
@@ -38,6 +41,13 @@
 . "$PSScriptRoot\Lib\Cerberus-Config.ps1"
 . "$PSScriptRoot\Lib\Cerberus-Upload.ps1"
 . "$PSScriptRoot\Lib\Cerberus-RunTool.ps1"
+
+
+# =============================================================================
+# STEP 2: Initialize log session
+# =============================================================================
+
+Initialize-LogSession -Operation "THOR" -ScriptRoot $PSScriptRoot
 
 
 # =============================================================================
@@ -59,23 +69,26 @@ function Get-ZipFileName {
 
 
 # =============================================================================
-# STEP 2: Load configuration
+# STEP 3: Load configuration
 # =============================================================================
 # This reads Cerberus_Config.json and validates it has all required fields.
 # If anything is wrong, it prints an error and returns $null.
 
-Write-Log "Loading configuration..."
+Write-Log "Loading configuration..." "INFO" -Category "CONFIG"
 
 $Config = Get-CerberusConfig -ScriptRoot $PSScriptRoot
 
 if (-not $Config) {
-    Write-Log "Failed to load configuration" "ERROR"
+    Write-Log "Failed to load configuration" "ERROR" -Category "CONFIG"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
+Write-Log "Configuration loaded successfully" "SUCCESS" -Category "CONFIG"
+
 
 # =============================================================================
-# STEP 3: Setup paths
+# STEP 4: Setup paths
 # =============================================================================
 # Define where THOR is located and where to save output.
 
@@ -86,32 +99,33 @@ $ZipFile = Get-ZipFileName -Tool "THOR" -Directory $EvidenceFolder
 
 
 # =============================================================================
-# STEP 4: Check THOR exists
+# STEP 5: Check THOR exists
 # =============================================================================
 
 if (-not (Test-Path $ThorExe)) {
-    Write-Log "THOR not found at: $ThorExe" "ERROR"
-    Write-Log "Make sure THOR is installed in the Bin\THOR folder" "ERROR"
+    Write-Log "THOR not found at: $ThorExe" "ERROR" -Category "TOOL"
+    Write-Log "Make sure THOR is installed in the Bin\THOR folder" "ERROR" -Category "TOOL"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
-Write-Log "Found THOR at: $ThorExe" "SUCCESS"
+Write-Log "Found THOR at: $ThorExe" "SUCCESS" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 5: Create output folder
+# STEP 6: Create output folder
 # =============================================================================
 # New-Item creates the folder. -Force means "don't error if it exists".
 # | Out-Null hides the output (we don't need to see it).
 
 if (-not (Test-Path $OutputFolder)) {
     New-Item -ItemType Directory -Path $OutputFolder -Force | Out-Null
-    Write-Log "Created output folder: $OutputFolder"
+    Write-Log "Created output folder: $OutputFolder" "INFO" -Category "CONFIG"
 }
 
 
 # =============================================================================
-# STEP 6: Build command arguments
+# STEP 7: Build command arguments
 # =============================================================================
 # THOR needs to know where to save its log files.
 # --logfile = text log, --htmlfile = HTML report
@@ -120,11 +134,11 @@ $LogFile = "$OutputFolder\$env:COMPUTERNAME.txt"
 $HtmlFile = "$OutputFolder\$env:COMPUTERNAME.html"
 $Arguments = "--logfile `"$LogFile`" --htmlfile `"$HtmlFile`" $($Config.Tools.Thor.Args)"
 
-Write-Log "THOR arguments: $Arguments"
+Write-Log "THOR arguments: $Arguments" "INFO" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 7: Pre-flight check and user confirmation
+# STEP 8: Pre-flight check and user confirmation
 # =============================================================================
 
 # Get system information for pre-flight display
@@ -138,56 +152,55 @@ $targetFreeGB = [math]::Round($targetDrive.FreeSpace / 1GB, 2)
 
 $domain = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "WORKGROUP" }
 
-Write-Host ""
-Write-Host "==========================================="
-Write-Host "THOR MALWARE SCAN - PRE-FLIGHT CHECK"
-Write-Host "==========================================="
-Write-Host ""
-Write-Host "SCAN TARGET" -ForegroundColor Yellow
-Write-Host "  Drive:             C:\"
-Write-Host "  Total Size:        $totalGB GB"
-Write-Host "  Used Space:        $usedGB GB"
-Write-Host ""
-Write-Host "OUTPUT LOCATION" -ForegroundColor Yellow
-Write-Host "  Path:              $EvidenceFolder"
-Write-Host "  Free Space:        $targetFreeGB GB"
-Write-Host ""
-Write-Host "EXPECTED OUTPUT" -ForegroundColor Yellow
-Write-Host "  Log Files:         ~500 MB maximum"
-Write-Host "  Space Required:    1 GB (with buffer)"
-Write-Host ""
-Write-Host "ESTIMATED RUN TIME" -ForegroundColor Yellow
-Write-Host "  Duration:          1 - 4 hours"
-Write-Host "  Timeout:           48 hours"
-Write-Host ""
-Write-Host "OUTPUT FILE" -ForegroundColor Yellow
-Write-Host "  $(Split-Path $ZipFile -Leaf)"
-Write-Host ""
+Write-Log "" "INFO"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "THOR MALWARE SCAN - PRE-FLIGHT CHECK" "INFO" -Category "PREFLIGHT"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "SCAN TARGET" "INFO" -Category "PREFLIGHT"
+Write-Log "  Drive:             C:\" "INFO" -Category "PREFLIGHT"
+Write-Log "  Total Size:        $totalGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Used Space:        $usedGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "OUTPUT LOCATION" "INFO" -Category "PREFLIGHT"
+Write-Log "  Path:              $EvidenceFolder" "INFO" -Category "PREFLIGHT"
+Write-Log "  Free Space:        $targetFreeGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "EXPECTED OUTPUT" "INFO" -Category "PREFLIGHT"
+Write-Log "  Log Files:         ~500 MB maximum" "INFO" -Category "PREFLIGHT"
+Write-Log "  Space Required:    1 GB (with buffer)" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "ESTIMATED RUN TIME" "INFO" -Category "PREFLIGHT"
+Write-Log "  Duration:          1 - 4 hours" "INFO" -Category "PREFLIGHT"
+Write-Log "  Timeout:           48 hours" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "OUTPUT FILE" "INFO" -Category "PREFLIGHT"
+Write-Log "  $(Split-Path $ZipFile -Leaf)" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
 
 # Check if we have enough space
 if ($targetFreeGB -lt 1) {
-    Write-Host "STATUS: " -NoNewline
-    Write-Host "FAILED - Not enough disk space!" -ForegroundColor Red
-    Write-Host "==========================================="
+    Write-Log "STATUS: FAILED - Not enough disk space!" "ERROR" -Category "PREFLIGHT"
+    Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+    Complete-LogSession -Status "FAILED"
     exit 1
 } else {
-    Write-Host "STATUS: " -NoNewline
-    Write-Host "OK - Ready to scan" -ForegroundColor Green
+    Write-Log "STATUS: OK - Ready to scan" "SUCCESS" -Category "PREFLIGHT"
 }
-Write-Host "==========================================="
-Write-Host ""
-Write-Host "Press any key to start THOR scan, or Ctrl+C to cancel..." -ForegroundColor Yellow
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "Press any key to start THOR scan, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Write-Host ""
+Write-Log "" "INFO"
 
 # =============================================================================
-# STEP 8: Run THOR with heartbeat monitoring
+# STEP 9: Run THOR with heartbeat monitoring
 # =============================================================================
 # This runs THOR and prints "still running" every 60 seconds.
 # It will kill THOR if it runs longer than the timeout (48 hours).
 
-Write-Log "Starting THOR scan (this may take 1-4 hours)..."
-Write-Log "=========================================="
+Write-Log "Starting THOR scan (this may take 1-4 hours)..." "INFO" -Category "TOOL"
+Write-Log "==========================================" "INFO" -Category "TOOL"
 
 $result = Start-ToolWithMonitoring `
     -ExePath $ThorExe `
@@ -196,26 +209,26 @@ $result = Start-ToolWithMonitoring `
     -TimeoutMs $TIMEOUTS.Thor `
     -ProgressFile $LogFile
 
-Write-Log "=========================================="
+Write-Log "==========================================" "INFO" -Category "TOOL"
 
 # Check if THOR succeeded
 # Exit codes: 0=clean, 1=warnings, 2=alerts, 3=notices, 4+=error
 if ($result.ExitCode -ge 4) {
-    Write-Log "THOR failed with exit code: $($result.ExitCode)" "ERROR"
+    Write-Log "THOR failed with exit code: $($result.ExitCode)" "ERROR" -Category "TOOL"
     # Continue anyway to upload partial results
 } elseif ($result.ExitCode -eq 0) {
-    Write-Log "THOR completed: No threats detected" "SUCCESS"
+    Write-Log "THOR completed: No threats detected" "SUCCESS" -Category "TOOL"
 } else {
-    Write-Log "THOR completed: Findings detected (exit code $($result.ExitCode))" "WARNING"
+    Write-Log "THOR completed: Findings detected (exit code $($result.ExitCode))" "WARNING" -Category "TOOL"
 }
 
 
 # =============================================================================
-# STEP 9: Compress results
+# STEP 10: Compress results
 # =============================================================================
 # Zip up all the output files for easier upload.
 
-Write-Log "Compressing results..."
+Write-Log "Compressing results..." "INFO" -Category "COMPRESS"
 
 if (Test-Path $OutputFolder) {
     try {
@@ -227,35 +240,45 @@ if (Test-Path $OutputFolder) {
         Compress-Archive -Path "$OutputFolder\*" -DestinationPath $ZipFile -Force
         
         $zipSize = [math]::Round((Get-Item $ZipFile).Length / 1MB, 2)
-        Write-Log "Created: $ZipFile ($zipSize MB)" "SUCCESS"
+        Write-Log "Created: $ZipFile ($zipSize MB)" "SUCCESS" -Category "COMPRESS"
     }
     catch {
-        Write-Log "Failed to compress: $($_.Exception.Message)" "ERROR"
+        Write-Log "Failed to compress: $($_.Exception.Message)" "ERROR" -Category "COMPRESS"
+        Complete-LogSession -Status "FAILED"
         exit 1
     }
 } else {
-    Write-Log "No output folder found - nothing to compress" "WARNING"
+    Write-Log "No output folder found - nothing to compress" "WARNING" -Category "COMPRESS"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
 
 # =============================================================================
-# STEP 10: Upload to MinIO
+# STEP 11: Complete THOR log session before upload
 # =============================================================================
 
-Write-Log "Uploading to MinIO..."
+$zipSizeFormatted = "$zipSize MB"
+Complete-LogSession -Status "SUCCESS" -OutputFile $ZipFile -OutputSize $zipSizeFormatted
+
+
+# =============================================================================
+# STEP 12: Upload to MinIO (creates its own log session)
+# =============================================================================
+
+Write-Log "Initiating upload to MinIO..." "INFO" -Category "UPLOAD"
 
 $uploaded = Send-ToMinIO -FilePath $ZipFile -Config $Config -ScriptRoot $PSScriptRoot
 
 if ($uploaded) {
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     Write-Log "SUCCESS: Evidence uploaded to MinIO" "SUCCESS"
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     exit 0
 } else {
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     Write-Log "Upload failed - evidence saved locally" "WARNING"
     Write-Log "Local file: $ZipFile" "WARNING"
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     exit 1
 }
