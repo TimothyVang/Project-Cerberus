@@ -1,15 +1,26 @@
 # PROJECT CERBERUS - DFIR TRIAGE KIT
 **Unified Forensic Collection for Local & Remote Deployments**
 
-## 📂 Kit Structure
+## Kit Structure
 ```text
 Project_Cerberus/
 ├── Bin/                   # Tools (KAPE, THOR, FTK, MinIO)
 ├── Evidence/              # Output store (Preserved locally)
 ├── Logs/                  # Execution logs (cerberus-YYYYMMDD.log)
-├── Lib/                   # Shared modules (Write-Log.ps1)
+├── Lib/                   # Shared modules
+│   ├── Write-Log.ps1          # Logging utility
+│   ├── Cerberus-Constants.ps1 # Timeouts, thresholds, paths
+│   ├── Cerberus-Config.ps1    # Load & validate JSON config
+│   ├── Cerberus-Upload.ps1    # MinIO upload functions
+│   └── Cerberus-RunTool.ps1   # Heartbeat monitoring
 ├── Cerberus_Launcher.bat  # [MODE 1] Local/USB Terminal Interface
-├── Cerberus_Agent.ps1     # [MODE 2] Remote/Elastic Headless Agent
+├── Cerberus.ps1           # [MODE 2] Remote Entry Point (simple syntax)
+├── Run-Thor.ps1           # THOR malware scan
+├── Run-KapeDisk.ps1       # KAPE disk artifacts
+├── Run-KapeRam.ps1        # KAPE RAM capture
+├── Run-KapeCombined.ps1   # RAM first, then Disk
+├── Run-Ftk.ps1            # Full disk imaging
+├── Run-UploadOnly.ps1     # Upload existing evidence
 ├── Cerberus_Config.json   # Remote Configuration (Credentials & Args)
 ├── _settings.bat          # Local Configuration (Args)
 └── README.md              # This SOP
@@ -98,30 +109,32 @@ If you need to store evidence on different drives (e.g., FTK disk images on D:\)
 
 ```bash
 # 1. THOR Scan (1-4 hours | ~50MB output)
-# APT/IOC malware scanner
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool THOR" --timeout 86400s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' THOR" --timeout 86400s
 
 # 2. KAPE Disk Collection (15-30 min | 2-5GB output)
-# Collects Registry, Event Logs, Prefetch, MFT, etc. (NOT a full disk image)
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-DISK" --timeout 3600s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-DISK" --timeout 3600s
 
 # 3. RAM Capture (5-15 min | Size = Installed RAM)
-# Memory dump only - does NOT image the disk
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-RAM" --timeout 3600s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-RAM" --timeout 3600s
 
-# 4. Full Disk Image (2-8 hours | 20-100GB output)
-# Complete bit-for-bit RAW disk image of C: drive
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool FTK" --timeout 172800s
+# 4. RAM + Disk Combined (20-45 min | RAM first, then artifacts)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-COMBINED" --timeout 7200s
 
-# 5. Upload Existing Evidence (if upload failed)
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -UploadOnly" --timeout 7200s
+# 5. Full Disk Image (2-8 hours | 20-100GB output)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' FTK" --timeout 172800s
+
+# 6. FTK with custom output path (saves to external drive)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' FTK E:\Images" --timeout 172800s
+
+# 7. Upload Existing Evidence (if upload failed)
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' UPLOAD" --timeout 7200s
 ```
 
 **Path Notes:**
 
 - Default deployment path: `C:\ProgramData\Google\Project_Cerberus\`
 - Adjust path if deployed elsewhere
-- Use double backslashes (`\\`) or forward slashes (`/`) in paths
+- Use single quotes around file paths (NOT escaped backslashes)
 - Always use `powershell.exe` (not `pwsh.exe`) for compatibility
 
 **Tool Comparison:**
@@ -129,16 +142,18 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 - **THOR** - Malware/APT scanner (analyzes files for threats)
 - **KAPE-DISK** - Forensic artifact collector (Registry, logs, prefetch - **NOT full disk image**)
 - **KAPE-RAM** - Memory capture only (RAM dump)
+- **KAPE-COMBINED** - RAM first, then Disk (forensically correct order)
 - **FTK** - Complete disk imaging (full forensic disk copy)
-- **UploadOnly** - Retry MinIO upload without re-collecting
+- **UPLOAD** - Retry MinIO upload without re-collecting
 
-**⚠️ Important:** For full disk forensics, use **FTK**. KAPE-DISK only collects specific artifacts.
+**Important:** For full disk forensics, use **FTK**. KAPE-DISK only collects specific artifacts.
 
 **Timeout Guidelines:**
 
 - THOR: 86400s (24 hours)
 - KAPE-DISK: 3600s (1 hour)
 - KAPE-RAM: 3600s (1 hour)
+- KAPE-COMBINED: 7200s (2 hours)
 - FTK: 172800s (48 hours)
 
 ---
@@ -150,8 +165,8 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 # Local Mode (with HTML reports)
 Bin\THOR\thor64-lite.exe --logfile "Evidence\%COMPUTERNAME%\thor.txt" --htmlfile "Evidence\%COMPUTERNAME%\thor.html" --utc --nothordb
 
-# Remote Mode (via Agent)
-powershell -ExecutionPolicy Bypass -File "Cerberus_Agent.ps1" -Tool THOR
+# Remote Mode (simple syntax)
+powershell -ExecutionPolicy Bypass -File "Cerberus.ps1" THOR
 ```
 
 **THOR Output Files:**

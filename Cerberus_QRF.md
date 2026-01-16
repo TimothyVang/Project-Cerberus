@@ -29,27 +29,40 @@ execute --command "dir \"C:\ProgramData\Google\Project_Cerberus\"" --comment "Ve
 ### Option A: THOR Malware Scan
 *Standard malware and IOC scan. Output uploads to MinIO automatically.*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool THOR" --timeout 86400s --comment "THOR Scan (Remote)"
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' THOR" --timeout 86400s --comment "THOR Scan"
 ```
 *Monitor process:* `processes --comment "Check for thor64-lite.exe"`
 
 ### Option B: KAPE Disk Collection (Forensic Artifacts - NOT Full Disk)
 *Collects Registry, Event Logs, Prefetch, MFT, Amcache, etc. into VHDX*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-DISK" --timeout 3600s --comment "KAPE Disk Collection"
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-DISK" --timeout 3600s --comment "KAPE Disk Collection"
 ```
 **Note:** KAPE-DISK collects specific artifacts (2-5GB), not a complete disk image.
 
 ### Option C: KAPE RAM Capture (Memory Only)
 *Dumps system memory - does NOT image the disk*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-RAM" --timeout 3600s --comment "RAM Capture"
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-RAM" --timeout 3600s --comment "RAM Capture"
 ```
 
-### Option D: FTK Full Disk Acquisition (Complete Disk Image)
+### Option D: KAPE Combined (RAM + Disk)
+*Captures RAM first (preserves volatile data), then collects disk artifacts*
+```bash
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-COMBINED" --timeout 7200s --comment "RAM + Disk Combined"
+```
+**Note:** Forensically correct order - RAM captured before disk operations modify memory.
+
+### Option E: FTK Full Disk Acquisition (Complete Disk Image)
 *Creates bit-for-bit RAW disk image of C: drive (20-100GB+)*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool FTK" --timeout 172800s --comment "Full Disk Acquisition"
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' FTK" --timeout 172800s --comment "Full Disk Acquisition"
+```
+
+### Option F: FTK with Custom Output Path
+*Saves disk image to external drive (useful when C: doesn't have space)*
+```bash
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' FTK E:\Images" --timeout 172800s --comment "FTK to External Drive"
 ```
 **Note:** For complete forensic disk imaging, use FTK (not KAPE).
 
@@ -63,9 +76,9 @@ execute --command "dir \"C:\ProgramData\Google\Project_Cerberus\Evidence\" /s" -
 ```
 
 ### Retry Uploads (If MinIO failed)
-*The Agent does NOT delete evidence. You can retry the upload step only.*
+*Evidence is NOT deleted. You can retry the upload step only.*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -UploadOnly" --timeout 7200s --comment "Retry MinIO Upload"
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' UPLOAD" --timeout 7200s --comment "Retry MinIO Upload"
 ```
 
 ---

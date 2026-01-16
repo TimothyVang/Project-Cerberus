@@ -74,3 +74,29 @@ $PATHS = @{
     FtkX86   = "Bin\FTK\x86\ftkimager.exe"
     MinIO    = "Bin\MinIO\mc.exe"
 }
+
+# -----------------------------------------------------------------------------
+# UPLOAD - Settings for MinIO uploads with resume and progress
+# -----------------------------------------------------------------------------
+# These control how large file uploads behave.
+#
+# RESUME LOGIC:
+# - Before upload, check if file already exists on server
+# - If sizes match, skip (already uploaded)
+# - If sizes differ or not found, upload fresh
+# - On failure, retry with exponential backoff
+#
+# PROGRESS DISPLAY:
+# - Show progress bar every ProgressPercent (e.g., every 5%)
+# - Display: percentage, bytes transferred, speed, ETA
+# -----------------------------------------------------------------------------
+
+$UPLOAD = @{
+    MaxRetries       = 5           # Number of retry attempts before giving up
+    RetryDelayMs     = 5000        # Initial retry delay (5 seconds)
+    RetryBackoff     = 2           # Multiply delay by this on each retry (exponential)
+    PartSize         = "64MiB"     # Part size for multipart upload
+    ParallelParts    = 4           # Number of parallel part uploads
+    ProgressPercent  = 5           # Update progress every N percent
+    StateFileRetain  = $true       # Keep .upload-state file after successful upload
+}

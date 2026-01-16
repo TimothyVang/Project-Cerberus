@@ -12,15 +12,27 @@
 ## 1. Kit Overview
 Project Cerberus is a unified toolkit designed for two distinct operational modes:
 1.  **USB / Local Triage**: For air-gapped or onsite collection (using `Cerberus_Launcher.bat`).
-2.  **Remote / Elastic Triage**: For network-wide collection via Kibana (using `Cerberus_Agent.ps1`).
+2.  **Remote / Elastic Triage**: For network-wide collection via Kibana (using `Cerberus.ps1`).
 
 ### Directory Structure
 ```text
 Project_Cerberus/
 ├── Bin/                   # Tool Binaries (FTK, KAPE, THOR, MinIO)
 ├── Evidence/              # Collection Output (Auto-created per hostname)
+├── Lib/                   # Shared modules
+│   ├── Write-Log.ps1          # Logging utility
+│   ├── Cerberus-Constants.ps1 # Timeouts, thresholds, paths
+│   ├── Cerberus-Config.ps1    # Load & validate JSON config
+│   ├── Cerberus-Upload.ps1    # MinIO upload functions
+│   └── Cerberus-RunTool.ps1   # Heartbeat monitoring
 ├── Cerberus_Launcher.bat  # USB Launcher (Double-click this)
-├── Cerberus_Agent.ps1     # Remote Agent (Run via PowerShell/Kibana)
+├── Cerberus.ps1           # Remote Entry Point (simple syntax)
+├── Run-Thor.ps1           # THOR malware scan
+├── Run-KapeDisk.ps1       # KAPE disk artifacts
+├── Run-KapeRam.ps1        # KAPE RAM capture
+├── Run-KapeCombined.ps1   # RAM first, then Disk
+├── Run-Ftk.ps1            # Full disk imaging
+├── Run-UploadOnly.ps1     # Upload existing evidence
 ├── Cerberus_Config.json   # Configuration File (Edit this!)
 ├── _settings.bat          # Launcher Settings
 └── README.md              # Quick Start Guide
@@ -131,34 +143,53 @@ Result: All evidence in `Evidence\` folder with standard naming `HOSTNAME-Tool.z
     ```
 
 ### Execution Commands (Copy-Paste)
-Use the `Cerberus_Agent.ps1` to trigger specific actions. It handles the logic (checking binaries, setting flags, uploading to MinIO).
+Use `Cerberus.ps1` with simple tool names. It handles the logic (checking binaries, setting flags, uploading to MinIO).
 
-**A. KAPE Disk Collection - Forensic Artifacts Collection**
-*Collects Registry, Event Logs, Prefetch, MFT, etc. into VHDX (NOT a full disk image)*
-```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-DISK" --timeout 3600s
-```
-
-**B. KAPE Memory Capture (RAM Only)**
-*Captures system memory - does not image the disk*
-```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-RAM" --timeout 3600s
-```
-
-**C. THOR Malware Scan**
+**A. THOR Malware Scan**
 *APT/IOC scanner - analyzes system for threats*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool THOR" --timeout 86400s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' THOR" --timeout 86400s
 ```
 
-**D. FTK Full Disk Image (RAW Format)**
+**B. KAPE Disk Collection - Forensic Artifacts Collection**
+*Collects Registry, Event Logs, Prefetch, MFT, etc. into VHDX (NOT a full disk image)*
+```bash
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-DISK" --timeout 3600s
+```
+
+**C. KAPE Memory Capture (RAM Only)**
+*Captures system memory - does not image the disk*
+```bash
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-RAM" --timeout 3600s
+```
+
+**D. KAPE Combined (RAM + Disk)**
+*Captures RAM first (preserves volatile data), then collects disk artifacts*
+```bash
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' KAPE-COMBINED" --timeout 7200s
+```
+
+**E. FTK Full Disk Image (RAW Format)**
 *Complete bit-for-bit disk image of C: drive*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool FTK" --timeout 172800s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' FTK" --timeout 172800s
 ```
 
-**⚠️ Important:**
+**F. FTK with Custom Output Path**
+*Saves disk image to external drive (useful when C: doesn't have space)*
+```bash
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' FTK E:\Images" --timeout 172800s
+```
+
+**G. Upload Existing Evidence**
+*Retry MinIO upload without re-collecting*
+```bash
+execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' UPLOAD" --timeout 7200s
+```
+
+**Important:**
 - **KAPE-DISK** collects specific forensic artifacts (fast, 2-5GB)
+- **KAPE-COMBINED** runs RAM first, then Disk (forensically correct order)
 - **FTK** creates a complete disk image (slow, 20-100GB+)
 - For full disk forensics, use **FTK**, not KAPE
 
@@ -195,16 +226,16 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 - `--utc` - Use UTC timestamps (enabled by default in agent)
 - `--nothordb` - Skip online ThorDB lookup for offline mode (enabled by default)
 
-### MinIO Upload Commands (Agent Implementation)
+### MinIO Upload Commands
 ```powershell
-# ✅ Agent uses this syntax (Cerberus_Agent.ps1)
-mc put -r "C:\Evidence\HOSTNAME-THOR" "minio\upload" --insecure
-
-# ✅ Upload single file
+# Upload single file
 mc put "C:\Evidence\file.zip" "minio\upload" --insecure
+
+# Upload directory recursively
+mc put -r "C:\Evidence\HOSTNAME-THOR" "minio\upload" --insecure
 ```
 
-**Implementation Note:** The agent uses `mc put` with backslash separator (`minio\bucket`) for Windows compatibility and legacy KAPE script consistency.
+**Implementation Note:** Uses `mc put` with backslash separator (`minio\bucket`) for Windows compatibility.
 
 ### Common Issues
 **"unknown flag: --output" (THOR)**
@@ -216,4 +247,4 @@ mc put "C:\Evidence\file.zip" "minio\upload" --insecure
 - Evidence is always preserved locally even if upload fails
 
 ---
-*Project Cerberus SOP v2.3 - Updated Jan 2026*
+*Project Cerberus SOP v2.4 - Updated Jan 2026*
