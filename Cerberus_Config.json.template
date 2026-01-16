@@ -8,10 +8,12 @@
     "Paths": {
         "EvidenceRoot": "${ScriptRoot}\\Evidence",
         "FTK": "",
-        "EnableCustomPaths": false
+        "_FTK_WARNING": "REQUIRED FOR FTK: Set to external drive path (e.g., E:\\Evidence). FTK disk images are 100GB-2TB and WILL crash your system if saved locally!"
     },
-    "Naming": {
-        "IncludeDomain": false
+    "Compression": {
+        "Level": "Optimal",
+        "_Options": "NoCompression | Fastest | Optimal",
+        "_Note": "Optimal=smallest files (slower), Fastest=quick but larger, NoCompression=no compression"
     },
     "Tools": {
         "Thor": {
@@ -22,7 +24,8 @@
             "RamArgs": "--msource C:\\ --mdest ${Output} --zm true --module MagnetForensics_RAMCapture"
         },
         "FTK": {
-            "Args": "--compress 9 --frag 1TB"
+            "Args": "--compress 9 --frag 1TB",
+            "_Note": "FTK REQUIRES Paths.FTK to be set to an external drive!"
         }
     }
 }

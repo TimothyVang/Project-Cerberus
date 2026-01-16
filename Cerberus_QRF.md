@@ -33,12 +33,12 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 ```
 *Monitor process:* `processes --comment "Check for thor64-lite.exe"`
 
-### Option B: KAPE Triage (Forensic Artifacts - NOT Full Disk)
+### Option B: KAPE Disk Collection (Forensic Artifacts - NOT Full Disk)
 *Collects Registry, Event Logs, Prefetch, MFT, Amcache, etc. into VHDX*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-TRIAGE" --timeout 3600s --comment "KAPE Triage Collection"
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-DISK" --timeout 3600s --comment "KAPE Disk Collection"
 ```
-**Note:** KAPE-TRIAGE collects specific artifacts (2-5GB), not a complete disk image.
+**Note:** KAPE-DISK collects specific artifacts (2-5GB), not a complete disk image.
 
 ### Option C: KAPE RAM Capture (Memory Only)
 *Dumps system memory - does NOT image the disk*

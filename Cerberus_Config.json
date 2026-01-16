@@ -7,11 +7,10 @@
     },
     "Paths": {
         "EvidenceRoot": "${ScriptRoot}\\Evidence",
-        "FTK": "",
-        "EnableCustomPaths": false
+        "FTK": ""
     },
-    "Naming": {
-        "IncludeDomain": false
+    "Compression": {
+        "Level": "Optimal"
     },
     "Tools": {
         "Thor": {

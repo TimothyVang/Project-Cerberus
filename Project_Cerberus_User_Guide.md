@@ -133,10 +133,10 @@ Result: All evidence in `Evidence\` folder with standard naming `HOSTNAME-Tool.z
 ### Execution Commands (Copy-Paste)
 Use the `Cerberus_Agent.ps1` to trigger specific actions. It handles the logic (checking binaries, setting flags, uploading to MinIO).
 
-**A. KAPE Triage - Forensic Artifacts Collection**
+**A. KAPE Disk Collection - Forensic Artifacts Collection**
 *Collects Registry, Event Logs, Prefetch, MFT, etc. into VHDX (NOT a full disk image)*
 ```bash
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-TRIAGE" --timeout 3600s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-DISK" --timeout 3600s
 ```
 
 **B. KAPE Memory Capture (RAM Only)**
@@ -158,7 +158,7 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 ```
 
 **⚠️ Important:**
-- **KAPE-TRIAGE** collects specific forensic artifacts (fast, 2-5GB)
+- **KAPE-DISK** collects specific forensic artifacts (fast, 2-5GB)
 - **FTK** creates a complete disk image (slow, 20-100GB+)
 - For full disk forensics, use **FTK**, not KAPE
 
@@ -216,4 +216,4 @@ mc put "C:\Evidence\file.zip" "minio\upload" --insecure
 - Evidence is always preserved locally even if upload fails
 
 ---
-*Project Cerberus SOP v2.2 - Updated Jan 2026*
+*Project Cerberus SOP v2.3 - Updated Jan 2026*

@@ -101,9 +101,9 @@ If you need to store evidence on different drives (e.g., FTK disk images on D:\)
 # APT/IOC malware scanner
 execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool THOR" --timeout 86400s
 
-# 2. KAPE Triage (15-30 min | 2-5GB output)
+# 2. KAPE Disk Collection (15-30 min | 2-5GB output)
 # Collects Registry, Event Logs, Prefetch, MFT, etc. (NOT a full disk image)
-execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-TRIAGE" --timeout 3600s
+execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData\Google\Project_Cerberus\Cerberus_Agent.ps1\" -Tool KAPE-DISK" --timeout 3600s
 
 # 3. RAM Capture (5-15 min | Size = Installed RAM)
 # Memory dump only - does NOT image the disk
@@ -127,17 +127,17 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File \"C:\ProgramData
 **Tool Comparison:**
 
 - **THOR** - Malware/APT scanner (analyzes files for threats)
-- **KAPE-TRIAGE** - Forensic artifact collector (Registry, logs, prefetch - **NOT full disk image**)
+- **KAPE-DISK** - Forensic artifact collector (Registry, logs, prefetch - **NOT full disk image**)
 - **KAPE-RAM** - Memory capture only (RAM dump)
 - **FTK** - Complete disk imaging (full forensic disk copy)
 - **UploadOnly** - Retry MinIO upload without re-collecting
 
-**⚠️ Important:** For full disk forensics, use **FTK**. KAPE-TRIAGE only collects specific artifacts.
+**⚠️ Important:** For full disk forensics, use **FTK**. KAPE-DISK only collects specific artifacts.
 
 **Timeout Guidelines:**
 
 - THOR: 86400s (24 hours)
-- KAPE-TRIAGE: 3600s (1 hour)
+- KAPE-DISK: 3600s (1 hour)
 - KAPE-RAM: 3600s (1 hour)
 - FTK: 172800s (48 hours)
 
@@ -191,7 +191,7 @@ mc put "Evidence\HOSTNAME-FTK.zip" minio\upload --insecure
 **Compression Details**:
 - Compression ratios typically 30-50% of original size
 - Large files (>100MB) are always compressed before upload
-- All evidence folders automatically zipped: THOR, KAPE-Triage, KAPE-RAM, FTK
+- All evidence folders automatically zipped: THOR, KAPE-Disk, KAPE-RAM, FTK
 - Preserves chain of custody by keeping originals intact
 
 **Example Output**:
@@ -199,8 +199,8 @@ mc put "Evidence\HOSTNAME-FTK.zip" minio\upload --insecure
 Evidence/
 ├── HOSTNAME-THOR/              # Original folder (preserved locally)
 ├── HOSTNAME-THOR.zip           # Compressed and uploaded to MinIO
-├── HOSTNAME-KAPE-Triage/       # Original folder (preserved locally)
-├── HOSTNAME-KAPE-Triage.zip    # Compressed and uploaded to MinIO
+├── HOSTNAME-KAPE-Disk/         # Original folder (preserved locally)
+├── HOSTNAME-KAPE-Disk.zip      # Compressed and uploaded to MinIO
 ├── HOSTNAME-RAM/               # Original folder (preserved locally)
 ├── HOSTNAME-RAM.zip            # Compressed and uploaded to MinIO
 ├── HOSTNAME-Disk.raw           # FTK disk image segments (preserved)
