@@ -31,6 +31,9 @@
 # OUTPUT FILE NAMING:
 #   HOSTNAME-DOMAIN-KAPE-Mem.zip (e.g., DESKTOP-PC1-WORKGROUP-KAPE-Mem.zip)
 #
+# LOG FILE:
+#   Logs/{HOSTNAME}-{DOMAIN}/{HOSTNAME}-{DOMAIN}-KAPE-Ram_{TIMESTAMP}.log
+#
 # =============================================================================
 
 
@@ -43,6 +46,13 @@
 . "$PSScriptRoot\Lib\Cerberus-Config.ps1"
 . "$PSScriptRoot\Lib\Cerberus-Upload.ps1"
 . "$PSScriptRoot\Lib\Cerberus-RunTool.ps1"
+
+
+# =============================================================================
+# STEP 2: Initialize log session
+# =============================================================================
+
+Initialize-LogSession -Operation "KAPE-Ram" -ScriptRoot $PSScriptRoot
 
 
 # =============================================================================
@@ -64,21 +74,24 @@ function Get-ZipFileName {
 
 
 # =============================================================================
-# STEP 2: Load configuration
+# STEP 3: Load configuration
 # =============================================================================
 
-Write-Log "Loading configuration..."
+Write-Log "Loading configuration..." "INFO" -Category "CONFIG"
 
 $Config = Get-CerberusConfig -ScriptRoot $PSScriptRoot
 
 if (-not $Config) {
-    Write-Log "Failed to load configuration" "ERROR"
+    Write-Log "Failed to load configuration" "ERROR" -Category "CONFIG"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
+Write-Log "Configuration loaded successfully" "SUCCESS" -Category "CONFIG"
+
 
 # =============================================================================
-# STEP 3: Setup paths
+# STEP 4: Setup paths
 # =============================================================================
 
 $KapeExe = "$PSScriptRoot\$($PATHS.Kape)"
@@ -88,20 +101,21 @@ $ZipFile = Get-ZipFileName -Tool "KAPE-Mem" -Directory $EvidenceFolder
 
 
 # =============================================================================
-# STEP 4: Check KAPE exists
+# STEP 5: Check KAPE exists
 # =============================================================================
 
 if (-not (Test-Path $KapeExe)) {
-    Write-Log "KAPE not found at: $KapeExe" "ERROR"
-    Write-Log "Make sure KAPE is installed in the Bin\KAPE folder" "ERROR"
+    Write-Log "KAPE not found at: $KapeExe" "ERROR" -Category "TOOL"
+    Write-Log "Make sure KAPE is installed in the Bin\KAPE folder" "ERROR" -Category "TOOL"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
-Write-Log "Found KAPE at: $KapeExe" "SUCCESS"
+Write-Log "Found KAPE at: $KapeExe" "SUCCESS" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 5: Check available RAM and disk space
+# STEP 6: Check available RAM and disk space
 # =============================================================================
 
 $totalRamGB = [math]::Round((Get-WmiObject Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 1)
@@ -113,7 +127,7 @@ if (-not (Test-Path $EvidenceFolder)) {
 }
 
 # =============================================================================
-# STEP 6: Pre-flight check and user confirmation
+# STEP 7: Pre-flight check and user confirmation
 # =============================================================================
 
 # Get system information for pre-flight display
@@ -125,87 +139,86 @@ $domain = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "WORKGROUP" }
 $overheadGB = [math]::Round($totalRamGB * 0.1, 2)
 $estimatedZipGB = [math]::Round($totalRamGB * 0.4, 1)  # Memory compresses well (~50-70%)
 
-Write-Host ""
-Write-Host "==========================================="
-Write-Host "KAPE MEMORY CAPTURE - PRE-FLIGHT CHECK"
-Write-Host "==========================================="
-Write-Host ""
-Write-Host "SYSTEM MEMORY" -ForegroundColor Yellow
-Write-Host "  Installed RAM:     $totalRamGB GB"
-Write-Host ""
-Write-Host "WHAT GETS CAPTURED" -ForegroundColor Yellow
-Write-Host "  - Full physical memory dump"
-Write-Host "  - Running processes"
-Write-Host "  - Network connections"
-Write-Host "  - Encryption keys (if in memory)"
-Write-Host "  - Memory-resident malware"
-Write-Host ""
-Write-Host "OUTPUT LOCATION" -ForegroundColor Yellow
-Write-Host "  Path:              $EvidenceFolder"
-Write-Host "  Free Space:        $targetFreeGB GB"
-Write-Host ""
-Write-Host "SPACE CALCULATION" -ForegroundColor Yellow
-Write-Host "  Memory Dump:       $totalRamGB GB"
-Write-Host "  Overhead (10%):    $overheadGB GB"
-Write-Host "  --------------------------------"
-Write-Host "  Total Required:    $requiredGB GB"
-Write-Host "  Available:         $targetFreeGB GB"
-Write-Host ""
-Write-Host "ESTIMATED RUN TIME" -ForegroundColor Yellow
-Write-Host "  Duration:          5 - 15 minutes"
-Write-Host "  Timeout:           2 hours"
-Write-Host ""
-Write-Host "OUTPUT FILE" -ForegroundColor Yellow
-Write-Host "  $(Split-Path $ZipFile -Leaf)"
-Write-Host ""
+Write-Log "" "INFO"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "KAPE MEMORY CAPTURE - PRE-FLIGHT CHECK" "INFO" -Category "PREFLIGHT"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "SYSTEM MEMORY" "INFO" -Category "PREFLIGHT"
+Write-Log "  Installed RAM:     $totalRamGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "WHAT GETS CAPTURED" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Full physical memory dump" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Running processes" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Network connections" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Encryption keys (if in memory)" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Memory-resident malware" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "OUTPUT LOCATION" "INFO" -Category "PREFLIGHT"
+Write-Log "  Path:              $EvidenceFolder" "INFO" -Category "PREFLIGHT"
+Write-Log "  Free Space:        $targetFreeGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "SPACE CALCULATION" "INFO" -Category "PREFLIGHT"
+Write-Log "  Memory Dump:       $totalRamGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Overhead (10%):    $overheadGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  --------------------------------" "INFO" -Category "PREFLIGHT"
+Write-Log "  Total Required:    $requiredGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Available:         $targetFreeGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "ESTIMATED RUN TIME" "INFO" -Category "PREFLIGHT"
+Write-Log "  Duration:          5 - 15 minutes" "INFO" -Category "PREFLIGHT"
+Write-Log "  Timeout:           2 hours" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "OUTPUT FILE" "INFO" -Category "PREFLIGHT"
+Write-Log "  $(Split-Path $ZipFile -Leaf)" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
 
 # Check if we have enough space
 if ($targetFreeGB -lt $requiredGB) {
-    Write-Host "STATUS: " -NoNewline
-    Write-Host "FAILED - Not enough disk space!" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Need $requiredGB GB for RAM dump, only $targetFreeGB GB available." -ForegroundColor Red
-    Write-Host ""
-    Write-Host "HOW TO FIX:" -ForegroundColor Cyan
-    Write-Host "  1. Free up at least $([math]::Ceiling($requiredGB - $targetFreeGB)) GB on the drive"
-    Write-Host "  2. Or use an external drive by setting Paths.EvidenceRoot in config"
-    Write-Host "==========================================="
+    Write-Log "STATUS: FAILED - Not enough disk space!" "ERROR" -Category "PREFLIGHT"
+    Write-Log "" "INFO"
+    Write-Log "Need $requiredGB GB for RAM dump, only $targetFreeGB GB available." "ERROR" -Category "PREFLIGHT"
+    Write-Log "" "INFO"
+    Write-Log "HOW TO FIX:" "INFO" -Category "PREFLIGHT"
+    Write-Log "  1. Free up at least $([math]::Ceiling($requiredGB - $targetFreeGB)) GB on the drive" "INFO" -Category "PREFLIGHT"
+    Write-Log "  2. Or use an external drive by setting Paths.EvidenceRoot in config" "INFO" -Category "PREFLIGHT"
+    Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+    Complete-LogSession -Status "FAILED"
     exit 1
 } else {
-    Write-Host "STATUS: " -NoNewline
-    Write-Host "OK - Ready to capture" -ForegroundColor Green
+    Write-Log "STATUS: OK - Ready to capture" "SUCCESS" -Category "PREFLIGHT"
 }
-Write-Host "==========================================="
-Write-Host ""
-Write-Host "Press any key to start memory capture, or Ctrl+C to cancel..." -ForegroundColor Yellow
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "Press any key to start memory capture, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Write-Host ""
+Write-Log "" "INFO"
 
 # =============================================================================
-# STEP 7: Create output folder
+# STEP 8: Create output folder
 # =============================================================================
 
 if (-not (Test-Path $OutputFolder)) {
     New-Item -ItemType Directory -Path $OutputFolder -Force | Out-Null
-    Write-Log "Created output folder: $OutputFolder"
+    Write-Log "Created output folder: $OutputFolder" "INFO" -Category "CONFIG"
 }
 
 
 # =============================================================================
-# STEP 8: Build command arguments
+# STEP 9: Build command arguments
 # =============================================================================
 
 $Arguments = $Config.Tools.Kape.RamArgs -replace '\$\{Output\}', "`"$OutputFolder`""
 
-Write-Log "KAPE arguments: $Arguments"
+Write-Log "KAPE arguments: $Arguments" "INFO" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 9: Run KAPE RAM capture with heartbeat monitoring
+# STEP 10: Run KAPE RAM capture with heartbeat monitoring
 # =============================================================================
 
-Write-Log "Starting RAM capture (5-15 minutes)..."
-Write-Log "=========================================="
+Write-Log "Starting RAM capture (5-15 minutes)..." "INFO" -Category "TOOL"
+Write-Log "==========================================" "INFO" -Category "TOOL"
 
 $result = Start-ToolWithMonitoring `
     -ExePath $KapeExe `
@@ -213,21 +226,22 @@ $result = Start-ToolWithMonitoring `
     -ToolName "KAPE-RAM" `
     -TimeoutMs $TIMEOUTS.KapeRam
 
-Write-Log "=========================================="
+Write-Log "==========================================" "INFO" -Category "TOOL"
 
 if (-not $result.Success) {
-    Write-Log "RAM capture failed: $($result.Error)" "ERROR"
+    Write-Log "RAM capture failed: $($result.Error)" "ERROR" -Category "TOOL"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
-Write-Log "RAM capture complete!" "SUCCESS"
+Write-Log "RAM capture complete!" "SUCCESS" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 10: Compress results
+# STEP 11: Compress results
 # =============================================================================
 
-Write-Log "Compressing RAM dump (this may take a while)..."
+Write-Log "Compressing RAM dump (this may take a while)..." "INFO" -Category "COMPRESS"
 
 if (Test-Path $OutputFolder) {
     try {
@@ -238,35 +252,45 @@ if (Test-Path $OutputFolder) {
         Compress-Archive -Path "$OutputFolder\*" -DestinationPath $ZipFile -Force
         
         $zipSize = [math]::Round((Get-Item $ZipFile).Length / 1MB, 2)
-        Write-Log "Created: $ZipFile ($zipSize MB)" "SUCCESS"
+        Write-Log "Created: $ZipFile ($zipSize MB)" "SUCCESS" -Category "COMPRESS"
     }
     catch {
-        Write-Log "Failed to compress: $($_.Exception.Message)" "ERROR"
+        Write-Log "Failed to compress: $($_.Exception.Message)" "ERROR" -Category "COMPRESS"
+        Complete-LogSession -Status "FAILED"
         exit 1
     }
 } else {
-    Write-Log "No output folder found - nothing to compress" "WARNING"
+    Write-Log "No output folder found - nothing to compress" "WARNING" -Category "COMPRESS"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
 
 # =============================================================================
-# STEP 11: Upload to MinIO
+# STEP 12: Complete KAPE-Ram log session before upload
 # =============================================================================
 
-Write-Log "Uploading to MinIO..."
+$zipSizeFormatted = "$zipSize MB"
+Complete-LogSession -Status "SUCCESS" -OutputFile $ZipFile -OutputSize $zipSizeFormatted
+
+
+# =============================================================================
+# STEP 13: Upload to MinIO (creates its own log session)
+# =============================================================================
+
+Write-Log "Initiating upload to MinIO..." "INFO" -Category "UPLOAD"
 
 $uploaded = Send-ToMinIO -FilePath $ZipFile -Config $Config -ScriptRoot $PSScriptRoot
 
 if ($uploaded) {
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     Write-Log "SUCCESS: Evidence uploaded to MinIO" "SUCCESS"
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     exit 0
 } else {
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     Write-Log "Upload failed - evidence saved locally" "WARNING"
     Write-Log "Local file: $ZipFile" "WARNING"
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     exit 1
 }

@@ -29,6 +29,9 @@
 # OUTPUT FILE NAMING:
 #   HOSTNAME-DOMAIN-KAPE-Disk.zip (e.g., DESKTOP-PC1-WORKGROUP-KAPE-Disk.zip)
 #
+# LOG FILE:
+#   Logs/{HOSTNAME}-{DOMAIN}/{HOSTNAME}-{DOMAIN}-KAPE-Disk_{TIMESTAMP}.log
+#
 # =============================================================================
 
 
@@ -41,6 +44,13 @@
 . "$PSScriptRoot\Lib\Cerberus-Config.ps1"
 . "$PSScriptRoot\Lib\Cerberus-Upload.ps1"
 . "$PSScriptRoot\Lib\Cerberus-RunTool.ps1"
+
+
+# =============================================================================
+# STEP 2: Initialize log session
+# =============================================================================
+
+Initialize-LogSession -Operation "KAPE-Disk" -ScriptRoot $PSScriptRoot
 
 
 # =============================================================================
@@ -62,21 +72,24 @@ function Get-ZipFileName {
 
 
 # =============================================================================
-# STEP 2: Load configuration
+# STEP 3: Load configuration
 # =============================================================================
 
-Write-Log "Loading configuration..."
+Write-Log "Loading configuration..." "INFO" -Category "CONFIG"
 
 $Config = Get-CerberusConfig -ScriptRoot $PSScriptRoot
 
 if (-not $Config) {
-    Write-Log "Failed to load configuration" "ERROR"
+    Write-Log "Failed to load configuration" "ERROR" -Category "CONFIG"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
+Write-Log "Configuration loaded successfully" "SUCCESS" -Category "CONFIG"
+
 
 # =============================================================================
-# STEP 3: Setup paths
+# STEP 4: Setup paths
 # =============================================================================
 
 $KapeExe = "$PSScriptRoot\$($PATHS.Kape)"
@@ -86,20 +99,21 @@ $ZipFile = Get-ZipFileName -Tool "KAPE-Disk" -Directory $EvidenceFolder
 
 
 # =============================================================================
-# STEP 4: Check KAPE exists
+# STEP 5: Check KAPE exists
 # =============================================================================
 
 if (-not (Test-Path $KapeExe)) {
-    Write-Log "KAPE not found at: $KapeExe" "ERROR"
-    Write-Log "Make sure KAPE is installed in the Bin\KAPE folder" "ERROR"
+    Write-Log "KAPE not found at: $KapeExe" "ERROR" -Category "TOOL"
+    Write-Log "Make sure KAPE is installed in the Bin\KAPE folder" "ERROR" -Category "TOOL"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
-Write-Log "Found KAPE at: $KapeExe" "SUCCESS"
+Write-Log "Found KAPE at: $KapeExe" "SUCCESS" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 5: Check disk space
+# STEP 6: Check disk space
 # =============================================================================
 # KAPE can collect several GB of data, so we need enough free space.
 
@@ -108,7 +122,7 @@ if (-not (Test-Path $EvidenceFolder)) {
 }
 
 # =============================================================================
-# STEP 6: Pre-flight check and user confirmation
+# STEP 7: Pre-flight check and user confirmation
 # =============================================================================
 
 # Get system information for pre-flight display
@@ -123,77 +137,75 @@ $targetFreeGB = [math]::Round($targetDrive.FreeSpace / 1GB, 2)
 $domain = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "WORKGROUP" }
 $requiredGB = 25  # KAPE disk collection typically needs up to 25GB
 
-Write-Host ""
-Write-Host "==========================================="
-Write-Host "KAPE DISK COLLECTION - PRE-FLIGHT CHECK"
-Write-Host "==========================================="
-Write-Host ""
-Write-Host "COLLECTION SOURCE" -ForegroundColor Yellow
-Write-Host "  Drive:             C:\"
-Write-Host "  Total Size:        $totalGB GB"
-Write-Host "  Used Space:        $usedGB GB"
-Write-Host ""
-Write-Host "TARGETS TO COLLECT" -ForegroundColor Yellow
-Write-Host "  - Registry Hives (SYSTEM, SAM, SOFTWARE, NTUSER.DAT)"
-Write-Host "  - Event Logs (Security, System, Application)"
-Write-Host "  - Prefetch Files"
-Write-Host "  - Browser History"
-Write-Host "  - `$MFT, `$UsnJrnl"
-Write-Host "  - BITS Database"
-Write-Host ""
-Write-Host "OUTPUT LOCATION" -ForegroundColor Yellow
-Write-Host "  Path:              $EvidenceFolder"
-Write-Host "  Free Space:        $targetFreeGB GB"
-Write-Host ""
-Write-Host "SPACE CALCULATION" -ForegroundColor Yellow
-Write-Host "  Typical Size:      2 - 20 GB"
-Write-Host "  Space Required:    $requiredGB GB (with buffer)"
-Write-Host "  Available:         $targetFreeGB GB"
-Write-Host ""
-Write-Host "ESTIMATED RUN TIME" -ForegroundColor Yellow
-Write-Host "  Duration:          15 - 45 minutes"
-Write-Host "  Timeout:           24 hours"
-Write-Host ""
-Write-Host "OUTPUT FILE" -ForegroundColor Yellow
-Write-Host "  $(Split-Path $ZipFile -Leaf)"
-Write-Host ""
+Write-Log "" "INFO"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "KAPE DISK COLLECTION - PRE-FLIGHT CHECK" "INFO" -Category "PREFLIGHT"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "COLLECTION SOURCE" "INFO" -Category "PREFLIGHT"
+Write-Log "  Drive:             C:\" "INFO" -Category "PREFLIGHT"
+Write-Log "  Total Size:        $totalGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Used Space:        $usedGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "TARGETS TO COLLECT" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Registry Hives (SYSTEM, SAM, SOFTWARE, NTUSER.DAT)" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Event Logs (Security, System, Application)" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Prefetch Files" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Browser History" "INFO" -Category "PREFLIGHT"
+Write-Log "  - `$MFT, `$UsnJrnl" "INFO" -Category "PREFLIGHT"
+Write-Log "  - BITS Database" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "OUTPUT LOCATION" "INFO" -Category "PREFLIGHT"
+Write-Log "  Path:              $EvidenceFolder" "INFO" -Category "PREFLIGHT"
+Write-Log "  Free Space:        $targetFreeGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "SPACE CALCULATION" "INFO" -Category "PREFLIGHT"
+Write-Log "  Typical Size:      2 - 20 GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Space Required:    $requiredGB GB (with buffer)" "INFO" -Category "PREFLIGHT"
+Write-Log "  Available:         $targetFreeGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "ESTIMATED RUN TIME" "INFO" -Category "PREFLIGHT"
+Write-Log "  Duration:          15 - 45 minutes" "INFO" -Category "PREFLIGHT"
+Write-Log "  Timeout:           24 hours" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "OUTPUT FILE" "INFO" -Category "PREFLIGHT"
+Write-Log "  $(Split-Path $ZipFile -Leaf)" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
 
 # Check if we have enough space
 if ($targetFreeGB -lt $requiredGB) {
-    Write-Host "STATUS: " -NoNewline
-    Write-Host "FAILED - Not enough disk space!" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Need $requiredGB GB, only $targetFreeGB GB available." -ForegroundColor Red
-    Write-Host "==========================================="
+    Write-Log "STATUS: FAILED - Not enough disk space!" "ERROR" -Category "PREFLIGHT"
+    Write-Log "Need $requiredGB GB, only $targetFreeGB GB available." "ERROR" -Category "PREFLIGHT"
+    Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+    Complete-LogSession -Status "FAILED"
     exit 1
 } else {
-    Write-Host "STATUS: " -NoNewline
-    Write-Host "OK - Ready to collect" -ForegroundColor Green
+    Write-Log "STATUS: OK - Ready to collect" "SUCCESS" -Category "PREFLIGHT"
 }
-Write-Host "==========================================="
-Write-Host ""
-Write-Host "Press any key to start KAPE Disk collection, or Ctrl+C to cancel..." -ForegroundColor Yellow
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "Press any key to start KAPE Disk collection, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Write-Host ""
+Write-Log "" "INFO"
 
 
 # =============================================================================
-# STEP 7: Build command arguments
+# STEP 8: Build command arguments
 # =============================================================================
 # KAPE arguments come from the config file.
 # We replace ${Output} with the actual output folder path.
 
 $Arguments = $Config.Tools.Kape.DiskArgs -replace '\$\{Output\}', "`"$OutputFolder`""
 
-Write-Log "KAPE arguments: $Arguments"
+Write-Log "KAPE arguments: $Arguments" "INFO" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 8: Run KAPE with heartbeat monitoring
+# STEP 9: Run KAPE with heartbeat monitoring
 # =============================================================================
 
-Write-Log "Starting KAPE artifact collection (15-30 minutes)..."
-Write-Log "=========================================="
+Write-Log "Starting KAPE artifact collection (15-30 minutes)..." "INFO" -Category "TOOL"
+Write-Log "==========================================" "INFO" -Category "TOOL"
 
 $result = Start-ToolWithMonitoring `
     -ExePath $KapeExe `
@@ -201,19 +213,19 @@ $result = Start-ToolWithMonitoring `
     -ToolName "KAPE" `
     -TimeoutMs $TIMEOUTS.Kape
 
-Write-Log "=========================================="
+Write-Log "==========================================" "INFO" -Category "TOOL"
 
 if (-not $result.Success) {
-    Write-Log "KAPE failed: $($result.Error)" "ERROR"
+    Write-Log "KAPE failed: $($result.Error)" "ERROR" -Category "TOOL"
     # Continue anyway to upload partial results
 }
 
 
 # =============================================================================
-# STEP 9: Compress results
+# STEP 10: Compress results
 # =============================================================================
 
-Write-Log "Compressing results..."
+Write-Log "Compressing results..." "INFO" -Category "COMPRESS"
 
 if (Test-Path $OutputFolder) {
     try {
@@ -224,35 +236,45 @@ if (Test-Path $OutputFolder) {
         Compress-Archive -Path "$OutputFolder\*" -DestinationPath $ZipFile -Force
         
         $zipSize = [math]::Round((Get-Item $ZipFile).Length / 1MB, 2)
-        Write-Log "Created: $ZipFile ($zipSize MB)" "SUCCESS"
+        Write-Log "Created: $ZipFile ($zipSize MB)" "SUCCESS" -Category "COMPRESS"
     }
     catch {
-        Write-Log "Failed to compress: $($_.Exception.Message)" "ERROR"
+        Write-Log "Failed to compress: $($_.Exception.Message)" "ERROR" -Category "COMPRESS"
+        Complete-LogSession -Status "FAILED"
         exit 1
     }
 } else {
-    Write-Log "No output folder found - nothing to compress" "WARNING"
+    Write-Log "No output folder found - nothing to compress" "WARNING" -Category "COMPRESS"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
 
 # =============================================================================
-# STEP 10: Upload to MinIO
+# STEP 11: Complete KAPE log session before upload
 # =============================================================================
 
-Write-Log "Uploading to MinIO..."
+$zipSizeFormatted = "$zipSize MB"
+Complete-LogSession -Status "SUCCESS" -OutputFile $ZipFile -OutputSize $zipSizeFormatted
+
+
+# =============================================================================
+# STEP 12: Upload to MinIO (creates its own log session)
+# =============================================================================
+
+Write-Log "Initiating upload to MinIO..." "INFO" -Category "UPLOAD"
 
 $uploaded = Send-ToMinIO -FilePath $ZipFile -Config $Config -ScriptRoot $PSScriptRoot
 
 if ($uploaded) {
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     Write-Log "SUCCESS: Evidence uploaded to MinIO" "SUCCESS"
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     exit 0
 } else {
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     Write-Log "Upload failed - evidence saved locally" "WARNING"
     Write-Log "Local file: $ZipFile" "WARNING"
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     exit 1
 }

@@ -46,6 +46,9 @@ param(
 # OUTPUT FILE NAMING:
 #   HOSTNAME-DOMAIN-FTK.zip (e.g., DESKTOP-PC1-WORKGROUP-FTK.zip)
 #
+# LOG FILE:
+#   Logs/{HOSTNAME}-{DOMAIN}/{HOSTNAME}-{DOMAIN}-FTK_{TIMESTAMP}.log
+#
 # =============================================================================
 
 
@@ -58,6 +61,13 @@ param(
 . "$PSScriptRoot\Lib\Cerberus-Config.ps1"
 . "$PSScriptRoot\Lib\Cerberus-Upload.ps1"
 . "$PSScriptRoot\Lib\Cerberus-RunTool.ps1"
+
+
+# =============================================================================
+# STEP 2: Initialize log session
+# =============================================================================
+
+Initialize-LogSession -Operation "FTK" -ScriptRoot $PSScriptRoot
 
 
 # =============================================================================
@@ -79,21 +89,24 @@ function Get-ZipFileName {
 
 
 # =============================================================================
-# STEP 2: Load configuration
+# STEP 3: Load configuration
 # =============================================================================
 
-Write-Log "Loading configuration..."
+Write-Log "Loading configuration..." "INFO" -Category "CONFIG"
 
 $Config = Get-CerberusConfig -ScriptRoot $PSScriptRoot
 
 if (-not $Config) {
-    Write-Log "Failed to load configuration" "ERROR"
+    Write-Log "Failed to load configuration" "ERROR" -Category "CONFIG"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
+Write-Log "Configuration loaded successfully" "SUCCESS" -Category "CONFIG"
+
 
 # =============================================================================
-# STEP 3: Setup paths
+# STEP 4: Setup paths
 # =============================================================================
 # Try x64 version first, fall back to x86 for older systems
 
@@ -103,7 +116,7 @@ if (-not (Test-Path $FtkExe)) {
 }
 
 # =============================================================================
-# STEP 4: Determine output path - command line > config > error
+# STEP 5: Determine output path - command line > config > error
 # =============================================================================
 # Priority: 1) -OutputPath parameter  2) Config Paths.FTK  3) Error
 
@@ -123,41 +136,40 @@ if ($OutputPath) {
     } else {
         $OutputFolder = $OutputPath
     }
-    Write-Log "Using command-line output path: $OutputFolder"
+    Write-Log "Using command-line output path: $OutputFolder" "INFO" -Category "CONFIG"
 } elseif ($Config.Paths.FTK -and $Config.Paths.FTK -ne "") {
     # Config path provided
     $OutputFolder = $Config.Paths.FTK -replace '\$\{ComputerName\}', $env:COMPUTERNAME
-    Write-Log "Using config output path: $OutputFolder"
+    Write-Log "Using config output path: $OutputFolder" "INFO" -Category "CONFIG"
 } else {
     # No path configured - show error
-    Write-Host ""
-    Write-Host "==========================================="  -ForegroundColor Red
-    Write-Host "[ERROR] FTK OUTPUT PATH NOT CONFIGURED" -ForegroundColor Red
-    Write-Host "==========================================="  -ForegroundColor Red
-    Write-Host ""
-    Write-Host "FTK creates disk images that can be 100GB - 2TB in size."
-    Write-Host "Saving locally WILL crash your system due to disk exhaustion."
-    Write-Host ""
-    Write-Host "SOURCE DRIVE (C:)" -ForegroundColor Yellow
-    Write-Host "  Total Size:        $sourceTotalGB GB"
-    Write-Host "  Used Space:        $sourceUsedGB GB"
-    Write-Host "  Free Space:        $sourceFreeGB GB"
-    Write-Host ""
-    Write-Host "ESTIMATED IMAGE SIZE" -ForegroundColor Yellow
-    Write-Host "  Minimum:           $sourceUsedGB GB (used space)"
-    Write-Host "  Maximum:           $sourceTotalGB GB (full disk)"
-    Write-Host ""
-    Write-Host "HOW TO FIX:" -ForegroundColor Cyan
-    Write-Host "  Option 1: Pass output path as parameter:"
-    Write-Host "    .\Run-Ftk.ps1 -OutputPath E:" -ForegroundColor Gray
-    Write-Host "    .\Run-Ftk.ps1 -OutputPath E:\Evidence" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "  Option 2: Configure in Cerberus_Config.json:"
-    Write-Host '     "Paths": {' -ForegroundColor Gray
-    Write-Host '         "FTK": "E:\\Cerberus_Evidence"' -ForegroundColor Gray
-    Write-Host '     }' -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "==========================================="  -ForegroundColor Red
+    Write-Log "" "INFO"
+    Write-Log "===========================================" "ERROR" -Category "CONFIG"
+    Write-Log "FTK OUTPUT PATH NOT CONFIGURED" "ERROR" -Category "CONFIG"
+    Write-Log "===========================================" "ERROR" -Category "CONFIG"
+    Write-Log "" "INFO"
+    Write-Log "FTK creates disk images that can be 100GB - 2TB in size." "ERROR" -Category "CONFIG"
+    Write-Log "Saving locally WILL crash your system due to disk exhaustion." "ERROR" -Category "CONFIG"
+    Write-Log "" "INFO"
+    Write-Log "SOURCE DRIVE (C:)" "INFO" -Category "CONFIG"
+    Write-Log "  Total Size:        $sourceTotalGB GB" "INFO" -Category "CONFIG"
+    Write-Log "  Used Space:        $sourceUsedGB GB" "INFO" -Category "CONFIG"
+    Write-Log "  Free Space:        $sourceFreeGB GB" "INFO" -Category "CONFIG"
+    Write-Log "" "INFO"
+    Write-Log "ESTIMATED IMAGE SIZE" "INFO" -Category "CONFIG"
+    Write-Log "  Minimum:           $sourceUsedGB GB (used space)" "INFO" -Category "CONFIG"
+    Write-Log "  Maximum:           $sourceTotalGB GB (full disk)" "INFO" -Category "CONFIG"
+    Write-Log "" "INFO"
+    Write-Log "HOW TO FIX:" "INFO" -Category "CONFIG"
+    Write-Log "  Option 1: Pass output path as parameter:" "INFO" -Category "CONFIG"
+    Write-Log "    .\Run-Ftk.ps1 -OutputPath E:" "INFO" -Category "CONFIG"
+    Write-Log "    .\Run-Ftk.ps1 -OutputPath E:\Evidence" "INFO" -Category "CONFIG"
+    Write-Log "" "INFO"
+    Write-Log "  Option 2: Configure in Cerberus_Config.json:" "INFO" -Category "CONFIG"
+    Write-Log '     "Paths": { "FTK": "E:\\Cerberus_Evidence" }' "INFO" -Category "CONFIG"
+    Write-Log "" "INFO"
+    Write-Log "===========================================" "ERROR" -Category "CONFIG"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
@@ -166,25 +178,27 @@ $ZipFile = Get-ZipFileName -Tool "FTK" -Directory $OutputFolder
 
 
 # =============================================================================
-# STEP 5: Check FTK exists
+# STEP 6: Check FTK exists
 # =============================================================================
 
 if (-not (Test-Path $FtkExe)) {
-    Write-Log "FTK Imager not found!" "ERROR"
-    Write-Log "Checked: $PSScriptRoot\$($PATHS.FtkX64)" "ERROR"
-    Write-Log "Checked: $PSScriptRoot\$($PATHS.FtkX86)" "ERROR"
+    Write-Log "FTK Imager not found!" "ERROR" -Category "TOOL"
+    Write-Log "Checked: $PSScriptRoot\$($PATHS.FtkX64)" "ERROR" -Category "TOOL"
+    Write-Log "Checked: $PSScriptRoot\$($PATHS.FtkX86)" "ERROR" -Category "TOOL"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
-Write-Log "Found FTK at: $FtkExe" "SUCCESS"
+Write-Log "Found FTK at: $FtkExe" "SUCCESS" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 6: Check disk space and create output folder
+# STEP 7: Check disk space and create output folder
 # =============================================================================
 
 if (-not (Test-Path $OutputFolder)) {
     New-Item -ItemType Directory -Path $OutputFolder -Force | Out-Null
+    Write-Log "Created output folder: $OutputFolder" "INFO" -Category "CONFIG"
 }
 
 # Get target drive info
@@ -196,90 +210,87 @@ $targetFreeGB = [math]::Round($targetDrive.FreeSpace / 1GB, 2)
 $domain = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "WORKGROUP" }
 
 # =============================================================================
-# STEP 7: Pre-flight check and user confirmation
+# STEP 8: Pre-flight check and user confirmation
 # =============================================================================
 
-Write-Host ""
-Write-Host "==========================================="
-Write-Host "FTK DISK IMAGING - PRE-FLIGHT CHECK"
-Write-Host "==========================================="
-Write-Host ""
-Write-Host "              *** WARNING ***" -ForegroundColor Yellow
-Write-Host "  FTK creates a bit-for-bit copy of the ENTIRE disk."
-Write-Host "  This REQUIRES an external drive with sufficient space."
-Write-Host ""
-Write-Host "SOURCE DRIVE (C:)" -ForegroundColor Yellow
-Write-Host "  Total Size:        $sourceTotalGB GB"
-Write-Host "  Used Space:        $sourceUsedGB GB"
-Write-Host "  Free Space:        $sourceFreeGB GB"
-Write-Host ""
-Write-Host "TARGET DRIVE ($targetDriveLetter)" -ForegroundColor Yellow
-Write-Host "  Path:              $OutputFolder"
-Write-Host "  Total Size:        $targetTotalGB GB"
-Write-Host "  Free Space:        $targetFreeGB GB"
-Write-Host ""
-Write-Host "WHAT GETS CAPTURED" -ForegroundColor Yellow
-Write-Host "  - Complete disk image (every sector)"
-Write-Host "  - Deleted files (recoverable)"
-Write-Host "  - Unallocated space"
-Write-Host "  - File slack space"
-Write-Host ""
-Write-Host "SPACE CALCULATION" -ForegroundColor Yellow
-Write-Host "  Image Size:        $sourceUsedGB - $sourceTotalGB GB"
-Write-Host "  Available:         $targetFreeGB GB"
+Write-Log "" "INFO"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "FTK DISK IMAGING - PRE-FLIGHT CHECK" "INFO" -Category "PREFLIGHT"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "              *** WARNING ***" "WARNING" -Category "PREFLIGHT"
+Write-Log "  FTK creates a bit-for-bit copy of the ENTIRE disk." "INFO" -Category "PREFLIGHT"
+Write-Log "  This REQUIRES an external drive with sufficient space." "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "SOURCE DRIVE (C:)" "INFO" -Category "PREFLIGHT"
+Write-Log "  Total Size:        $sourceTotalGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Used Space:        $sourceUsedGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Free Space:        $sourceFreeGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "TARGET DRIVE ($targetDriveLetter)" "INFO" -Category "PREFLIGHT"
+Write-Log "  Path:              $OutputFolder" "INFO" -Category "PREFLIGHT"
+Write-Log "  Total Size:        $targetTotalGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Free Space:        $targetFreeGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "WHAT GETS CAPTURED" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Complete disk image (every sector)" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Deleted files (recoverable)" "INFO" -Category "PREFLIGHT"
+Write-Log "  - Unallocated space" "INFO" -Category "PREFLIGHT"
+Write-Log "  - File slack space" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "SPACE CALCULATION" "INFO" -Category "PREFLIGHT"
+Write-Log "  Image Size:        $sourceUsedGB - $sourceTotalGB GB" "INFO" -Category "PREFLIGHT"
+Write-Log "  Available:         $targetFreeGB GB" "INFO" -Category "PREFLIGHT"
 
 # Check if target has enough space
 if ($targetFreeGB -lt $sourceUsedGB) {
-    Write-Host ""
-    Write-Host "STATUS: " -NoNewline
-    Write-Host "FAILED - Not enough space on target drive!" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Need at least $sourceUsedGB GB, only $targetFreeGB GB available." -ForegroundColor Red
-    Write-Host "Connect a larger external drive and update Paths.FTK in config." -ForegroundColor Red
-    Write-Host "==========================================="
+    Write-Log "" "INFO"
+    Write-Log "STATUS: FAILED - Not enough space on target drive!" "ERROR" -Category "PREFLIGHT"
+    Write-Log "" "INFO"
+    Write-Log "Need at least $sourceUsedGB GB, only $targetFreeGB GB available." "ERROR" -Category "PREFLIGHT"
+    Write-Log "Connect a larger external drive and update Paths.FTK in config." "ERROR" -Category "PREFLIGHT"
+    Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+    Complete-LogSession -Status "FAILED"
     exit 1
 } elseif ($targetFreeGB -lt $sourceTotalGB) {
-    Write-Host "  Status:            " -NoNewline
-    Write-Host "WARNING - May not fit full disk" -ForegroundColor Yellow
+    Write-Log "  Status:            WARNING - May not fit full disk" "WARNING" -Category "PREFLIGHT"
 } else {
-    Write-Host "  Status:            " -NoNewline
-    Write-Host "SUFFICIENT" -ForegroundColor Green
+    Write-Log "  Status:            SUFFICIENT" "SUCCESS" -Category "PREFLIGHT"
 }
 
-Write-Host ""
-Write-Host "ESTIMATED RUN TIME" -ForegroundColor Yellow
-Write-Host "  Duration:          2 - 8 hours"
-Write-Host "  Timeout:           72 hours"
-Write-Host ""
-Write-Host "OUTPUT FILE" -ForegroundColor Yellow
-Write-Host "  $(Split-Path $ZipFile -Leaf)"
-Write-Host ""
-Write-Host "STATUS: " -NoNewline
-Write-Host "OK - Ready to image" -ForegroundColor Green
-Write-Host "==========================================="
-Write-Host ""
-Write-Host "Press any key to start FTK imaging, or Ctrl+C to cancel..." -ForegroundColor Yellow
+Write-Log "" "INFO"
+Write-Log "ESTIMATED RUN TIME" "INFO" -Category "PREFLIGHT"
+Write-Log "  Duration:          2 - 8 hours" "INFO" -Category "PREFLIGHT"
+Write-Log "  Timeout:           72 hours" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "OUTPUT FILE" "INFO" -Category "PREFLIGHT"
+Write-Log "  $(Split-Path $ZipFile -Leaf)" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "STATUS: OK - Ready to image" "SUCCESS" -Category "PREFLIGHT"
+Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
+Write-Log "" "INFO"
+Write-Log "Press any key to start FTK imaging, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Write-Host ""
+Write-Log "" "INFO"
 
 
 # =============================================================================
-# STEP 8: Build command arguments
+# STEP 9: Build command arguments
 # =============================================================================
 # FTK Imager command format: ftkimager.exe [source] [dest] [options]
 
 $Arguments = "\\.\C: `"$ImageBase`" $($Config.Tools.FTK.Args)"
 
-Write-Log "FTK arguments: $Arguments"
-Write-Log "Output will be: $ImageBase.raw (may be split into multiple files)"
+Write-Log "FTK arguments: $Arguments" "INFO" -Category "TOOL"
+Write-Log "Output will be: $ImageBase.raw (may be split into multiple files)" "INFO" -Category "TOOL"
 
 
 # =============================================================================
-# STEP 9: Run FTK with heartbeat monitoring
+# STEP 10: Run FTK with heartbeat monitoring
 # =============================================================================
 
-Write-Log "Starting disk imaging (this will take 2-8 hours)..."
-Write-Log "=========================================="
+Write-Log "Starting disk imaging (this will take 2-8 hours)..." "INFO" -Category "TOOL"
+Write-Log "==========================================" "INFO" -Category "TOOL"
 
 $result = Start-ToolWithMonitoring `
     -ExePath $FtkExe `
@@ -287,20 +298,20 @@ $result = Start-ToolWithMonitoring `
     -ToolName "FTK" `
     -TimeoutMs $TIMEOUTS.Ftk
 
-Write-Log "=========================================="
+Write-Log "==========================================" "INFO" -Category "TOOL"
 
 if (-not $result.Success) {
-    Write-Log "FTK failed: $($result.Error)" "ERROR"
+    Write-Log "FTK failed: $($result.Error)" "ERROR" -Category "TOOL"
     # Continue anyway to upload partial results
 }
 
 
 # =============================================================================
-# STEP 10: Find and compress disk image files
+# STEP 11: Find and compress disk image files
 # =============================================================================
 # FTK may create multiple files: .raw, .raw.001, .raw.002, etc.
 
-Write-Log "Compressing disk image files..."
+Write-Log "Compressing disk image files..." "INFO" -Category "COMPRESS"
 
 $imageFiles = Get-ChildItem -Path $OutputFolder -Filter "$env:COMPUTERNAME-Disk.*" -ErrorAction SilentlyContinue
 
@@ -314,35 +325,45 @@ if ($imageFiles) {
         Compress-Archive -Path $imageFiles.FullName -DestinationPath $ZipFile -Force
         
         $zipSize = [math]::Round((Get-Item $ZipFile).Length / 1GB, 2)
-        Write-Log "Created: $ZipFile ($zipSize GB)" "SUCCESS"
+        Write-Log "Created: $ZipFile ($zipSize GB)" "SUCCESS" -Category "COMPRESS"
     }
     catch {
-        Write-Log "Failed to compress: $($_.Exception.Message)" "ERROR"
+        Write-Log "Failed to compress: $($_.Exception.Message)" "ERROR" -Category "COMPRESS"
+        Complete-LogSession -Status "FAILED"
         exit 1
     }
 } else {
-    Write-Log "No disk image files found!" "WARNING"
+    Write-Log "No disk image files found!" "WARNING" -Category "COMPRESS"
+    Complete-LogSession -Status "FAILED"
     exit 1
 }
 
 
 # =============================================================================
-# STEP 11: Upload to MinIO
+# STEP 12: Complete FTK log session before upload
 # =============================================================================
 
-Write-Log "Uploading to MinIO (this may take a while for large images)..."
+$zipSizeFormatted = "$zipSize GB"
+Complete-LogSession -Status "SUCCESS" -OutputFile $ZipFile -OutputSize $zipSizeFormatted
+
+
+# =============================================================================
+# STEP 13: Upload to MinIO (creates its own log session)
+# =============================================================================
+
+Write-Log "Initiating upload to MinIO (this may take a while for large images)..." "INFO" -Category "UPLOAD"
 
 $uploaded = Send-ToMinIO -FilePath $ZipFile -Config $Config -ScriptRoot $PSScriptRoot
 
 if ($uploaded) {
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     Write-Log "SUCCESS: Disk image uploaded to MinIO" "SUCCESS"
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     exit 0
 } else {
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     Write-Log "Upload failed - evidence saved locally" "WARNING"
     Write-Log "Local file: $ZipFile" "WARNING"
-    Write-Log "=========================================="
+    Write-Log "==========================================" "INFO"
     exit 1
 }
