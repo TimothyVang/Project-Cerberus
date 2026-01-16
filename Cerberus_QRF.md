@@ -5,21 +5,51 @@ This document provides step-by-step commands for deploying and executing the uni
 
 ---
 
-## Phase 1: Staging Cerberus
+## Phase 1: Staging Cerberus (Multi-Part Upload for 25MB Limit)
 
-### 1. Upload Kit
+The kit is split into 6 parts to accommodate upload size limits. Each part extracts to the same destination and files merge automatically.
+
+### Part Sizes
+| File | Contents | Size |
+|------|----------|------|
+| Part1_Core.zip | Scripts, Lib, Config | 50 KB |
+| Part2_FTK.zip | Bin/FTK | 4.2 MB |
+| Part3_MinIO.zip | Bin/MinIO | 11 MB |
+| Part4_KAPE.zip | Bin/KAPE | 24 MB |
+| Part5_THOR_Sigs.zip | THOR signatures & config | 8.4 MB |
+| Part6_THOR_Exe.zip | THOR executable | 16 MB |
+
+### Step 1: Upload All Parts
+```bash
+upload --file "Part1_Core.zip" --comment "Cerberus Core (1/6)"
+upload --file "Part2_FTK.zip" --comment "Cerberus FTK (2/6)"
+upload --file "Part3_MinIO.zip" --comment "Cerberus MinIO (3/6)"
+upload --file "Part4_KAPE.zip" --comment "Cerberus KAPE (4/6)"
+upload --file "Part5_THOR_Sigs.zip" --comment "Cerberus THOR Sigs (5/6)"
+upload --file "Part6_THOR_Exe.zip" --comment "Cerberus THOR Exe (6/6)"
+```
+
+### Step 2: Extract All Parts (Same Destination)
+```bash
+execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Part1_Core.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract Core (1/6)"
+execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Part2_FTK.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract FTK (2/6)"
+execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Part3_MinIO.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract MinIO (3/6)"
+execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Part4_KAPE.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract KAPE (4/6)"
+execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Part5_THOR_Sigs.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract THOR Sigs (5/6)"
+execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Part6_THOR_Exe.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract THOR Exe (6/6)"
+```
+
+### Step 3: Verify Deployment
+```bash
+execute --command "dir 'C:\ProgramData\Google\Project_Cerberus'" --comment "Verify extraction"
+execute --command "dir 'C:\ProgramData\Google\Project_Cerberus\Bin'" --comment "Verify Bin folder"
+```
+
+### Alternative: Single Zip (If No Size Limit)
+If your upload limit is larger than 65MB, you can use a single zip instead:
 ```bash
 upload --file "Project_Cerberus.zip" --comment "Upload Unified DFIR Kit"
-```
-
-### 2. Extract to ProgramData
-```bash
 execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Project_Cerberus.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract Cerberus Kit"
-```
-
-### 3. Verify Deployment
-```bash
-execute --command "dir \"C:\ProgramData\Google\Project_Cerberus\"" --comment "Verify extraction"
 ```
 
 ---
