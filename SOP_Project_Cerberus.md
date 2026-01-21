@@ -1,13 +1,13 @@
 # PROJECT CERBERUS: STANDARD OPERATING PROCEDURE
 
-**Unified Digital Forensics & Incident Response Toolkit**
+**Unified Digital Forensics & Incident Response Tool**
 
 ---
 
 | Field | Value |
 |-------|-------|
 | **Document Type** | Standard Operating Procedure |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Author** | PUG |
 | **Date** | January 2026 |
 | **Classification** | Unclassified |
@@ -19,7 +19,7 @@
 
 1. [Executive Summary](#1-executive-summary)
 2. [Pre-Mission Checklist](#2-pre-mission-checklist)
-3. [Kit Preparation](#3-kit-preparation)
+3. [Tool Preparation](#3-tool-preparation)
 4. [MODE 1: USB/Local Deployment](#4-mode-1-usblocal-deployment)
 5. [MODE 2: Remote Deployment (Elastic Defend)](#5-mode-2-remote-deployment-elastic-defend)
 6. [Tool-Specific Procedures](#6-tool-specific-procedures)
@@ -42,8 +42,8 @@ Project Cerberus is a unified Digital Forensics and Incident Response (DFIR) too
 | Tool | Purpose | Output |
 |------|---------|--------|
 | **THOR Lite** | Malware/APT scanning, IOC detection | HTML report + text log |
-| **KAPE** | Forensic artifact collection (Registry, logs, MFT) | VHDX container + zip |
-| **FTK Imager** | Full disk imaging, memory capture | RAW disk image |
+| **KAPE** | Forensic artifact collection (Registry, logs, MFT), RAM capture | VHDX container + zip |
+| **FTK Imager** | Full disk imaging | RAW disk image |
 
 ### 1.2 Operational Modes
 
@@ -92,14 +92,14 @@ Project_Cerberus/
 
 Complete all items before deploying Project Cerberus to a mission partner network.
 
-### 2.1 Kit Acquisition
+### 2.1 Component Acquisition
 
-- [ ] Obtain latest THOR Lite package from MEL
-- [ ] Obtain valid THOR Lite license file (`.lic`)
+- [ ] Download THOR Lite from https://www.nextron-systems.com/thor-lite/ (requires free registration)
+- [ ] Obtain valid THOR Lite license file (`.lic`) - sent via email after registration
 - [ ] Obtain current YARA rules (e.g., CrowdStrike ruleset)
-- [ ] Obtain MinIO credentials from Kit personnel
+- [ ] Obtain MinIO credentials from mission personnel
 
-### 2.2 Kit Configuration
+### 2.2 Tool Configuration
 
 - [ ] Encrypt YARA rules using `thor-util.exe` (produces `.yas` file)
 - [ ] Place encrypted rules in `Bin\THOR\signatures\yara\`
@@ -109,7 +109,7 @@ Complete all items before deploying Project Cerberus to a mission partner networ
 
 ### 2.3 Pre-Deployment Verification
 
-- [ ] Test kit on isolated/lab system before deployment
+- [ ] Test tool on isolated/lab system before deployment
 - [ ] Verify THOR scan completes without license errors
 - [ ] Verify KAPE collection produces expected artifacts
 - [ ] Verify MinIO upload succeeds (if network available)
@@ -132,7 +132,6 @@ Ensure sufficient free space on target system and evidence storage:
 | **KAPE RAM** | ~2x RAM | RAM size + 10% | Requires temp space = RAM |
 | **KAPE Combined** | ~2x RAM + 2 GB | RAM + 5 GB | RAM captured first |
 | **FTK Disk Image** | Minimal | **50-100% of source** | RAW image = disk size |
-| **FTK Memory** | Minimal | RAM size | Compressed ~50% |
 
 **Minimum Recommendations:**
 
@@ -147,22 +146,28 @@ Ensure sufficient free space on target system and evidence storage:
 
 ---
 
-## 3. Kit Preparation
+## 3. Tool Preparation
 
-This section describes how to build a valid Project Cerberus kit from scratch.
+This section describes how to build a valid Project Cerberus deployment from scratch.
 
-### 3.1 Phase 1: Acquire Components from MEL
+### 3.1 Phase 1: Acquire Components
 
-Contact your **Mission Element Lead (MEL)** to obtain:
+#### Download THOR Lite
 
-| Component | Description | Example Filename |
-|-----------|-------------|------------------|
-| THOR Lite Package | Scanner executable + base signatures | `thor10.7lite-win-pack.zip` |
-| License File | Activation file for THOR | `thor-lite-XXXXXX-XXXXXX.lic` |
-| YARA Rules | Custom threat signatures | `CrowdStrike_Rules_Jan2026.yar` |
-| MinIO Credentials | Server IP, access key, secret key | (provided verbally or secure channel) |
+1. Navigate to https://www.nextron-systems.com/thor-lite/
+2. Click **"Get THOR Lite Free"**
+3. Complete registration form (business email required)
+4. Check email for download link and license file (`.lic`)
+5. Download the **Windows** package (`thor10.7lite-win-pack.zip`)
 
-> **Reference**: [THOR Lite Download](https://www.nextron-systems.com/thor-lite/)
+#### Additional Components
+
+| Component | Source | Example Filename |
+|-----------|--------|------------------|
+| THOR Lite Package | https://www.nextron-systems.com/thor-lite/ | `thor10.7lite-win-pack.zip` |
+| License File | Sent via email after registration | `thor-lite-XXXXXX-XXXXXX.lic` |
+| YARA Rules | Mission Element Lead (MEL) or internal repo | `CrowdStrike_Rules_Jan2026.yar` |
+| MinIO Credentials | Mission personnel | (provided verbally or secure channel) |
 
 ### 3.2 Phase 2: Build the THOR Package
 
@@ -260,7 +265,7 @@ Edit `Cerberus_Config.json` with your mission-specific values:
 
 ### 3.4 Phase 4: Create Split Packages (For Elastic Deployment)
 
-Elastic Defend has a **25MB upload limit**. Split the kit into parts:
+Elastic Defend has a **25MB upload limit**. Split the tool into parts:
 
 | Part | Contents | Approximate Size |
 |------|----------|------------------|
@@ -435,8 +440,8 @@ execute --command "dir 'C:\ProgramData\Google\Project_Cerberus\Bin'" --comment "
 If your environment allows larger uploads (>65MB):
 
 ```bash
-upload --file "Project_Cerberus.zip" --comment "Upload Unified DFIR Kit"
-execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Project_Cerberus.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract Cerberus Kit"
+upload --file "Project_Cerberus.zip" --comment "Upload Project Cerberus"
+execute --command "powershell.exe -command Expand-Archive -Force -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Project_Cerberus.zip' -DestinationPath 'C:\ProgramData\Google'" --comment "Extract Project Cerberus"
 ```
 
 ### 5.3 Phase 2: Execute Collection
@@ -765,59 +770,32 @@ Remove-Item Env:\MC_HOST_minio
 
 ## 9. Cleanup Procedures
 
-**CRITICAL SECURITY STEP**: Always remove forensic tools from endpoints after collection.
+**Note**: For remote deployments via Elastic Defend, cleanup is automatically performed when the Elastic agent is removed from the endpoint. This section documents what gets cleaned up and manual procedures for USB/local deployments.
 
 ### 9.1 Remote Cleanup (Elastic Defend)
 
-#### Step 1: Remove Project Cerberus Directory
+Cleanup occurs automatically during agent removal. The following items are removed:
 
-```bash
-execute --command "powershell.exe -Command \"Remove-Item -Path 'C:\ProgramData\Google\Project_Cerberus' -Recurse -Force\"" --comment "Remove Cerberus directory"
-```
-
-#### Step 2: Remove Uploaded Zip Files
-
-```bash
-execute --command "powershell.exe -Command \"Remove-Item -Path 'C:\Program Files\Elastic\Endpoint\state\response_actions\Part*.zip' -Force\"" --comment "Remove uploaded zips"
-```
-
-#### Step 3: Remove MinIO Configuration (if used)
-
-```bash
-execute --command "powershell.exe -Command \"Remove-Item -Force -Recurse 'C:\Windows\System32\config\systemprofile\mc' -ErrorAction SilentlyContinue\"" --comment "Remove MinIO config"
-```
-
-#### Step 4: Verify Cleanup
-
-```bash
-execute --command "powershell.exe -Command \"Test-Path 'C:\ProgramData\Google\Project_Cerberus'\"" --comment "Verify removal (should return False)"
-```
-
-Expected output: `False`
+| Item | Location |
+|------|----------|
+| Project Cerberus | `C:\ProgramData\Google\Project_Cerberus\` |
+| Uploaded zip files | `C:\Program Files\Elastic\Endpoint\state\response_actions\` |
+| MinIO config | `C:\Windows\System32\config\systemprofile\mc\` |
 
 ### 9.2 Local/USB Cleanup
 
 When using USB deployment:
 
-1. Verify evidence has been copied from USB
+1. Verify evidence has been copied from USB to secure storage
 2. Securely wipe `Evidence\` folder if sensitive data present
 3. Remove any temporary files created during collection
 
-### 9.3 Cleanup Verification Checklist
+### 9.3 Security Note
 
-- [ ] `C:\ProgramData\Google\Project_Cerberus` does not exist
-- [ ] `C:\Program Files\Elastic\Endpoint\state\response_actions\Part*.zip` removed
-- [ ] `C:\Windows\System32\config\systemprofile\mc` removed (MinIO config)
-- [ ] No forensic tools remain on endpoint
-- [ ] No credentials remain in environment variables
-
-### 9.4 Security Warning
-
-> **IMPORTANT**: Failing to clean up forensic tools could:
-> - Leave sensitive security tools accessible to adversaries
-> - Expose MinIO credentials
-> - Create audit/compliance issues
-> - Violate mission partner agreements
+> **IMPORTANT**: Ensure all forensic tools and credentials are removed from endpoints to:
+> - Prevent adversary access to security tools
+> - Protect MinIO credentials
+> - Maintain compliance with mission partner agreements
 
 ---
 
@@ -896,10 +874,7 @@ execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\
 execute --command "powershell.exe -ExecutionPolicy Bypass -File 'C:\ProgramData\Google\Project_Cerberus\Cerberus.ps1' UPLOAD" --timeout 7200s --comment "Retry Upload"
 ```
 
-#### Cleanup
-```bash
-execute --command "powershell.exe -Command \"Remove-Item -Path 'C:\ProgramData\Google\Project_Cerberus', 'C:\Program Files\Elastic\Endpoint\state\response_actions\Part*.zip' -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item -Force -Recurse 'C:\Windows\System32\config\systemprofile\mc' -ErrorAction SilentlyContinue\"" --comment "Cleanup"
-```
+> **Note**: Cleanup is performed automatically during Elastic agent removal. See [Section 9](#9-cleanup-procedures).
 
 ### 11.3 Decision Matrix: Which Tool to Use?
 
@@ -1046,9 +1021,9 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | January 2026 | PUG | Initial release - comprehensive SOP for Project Cerberus |
-| | | | |
+| 1.1 | January 2026 | PUG | Added: CLI YARA encryption, disk space requirements, version compatibility matrix. Simplified cleanup section (performed at agent removal). Fixed KAPE docs URL. |
 | | | | |
 
 ---
 
-*Project Cerberus SOP v1.0 - PUG - January 2026*
+*Project Cerberus SOP v1.1 - PUG - January 2026*
