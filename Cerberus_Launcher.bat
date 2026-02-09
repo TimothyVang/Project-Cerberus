@@ -114,7 +114,7 @@ echo   [2] LEGACY System (Windows XP, Server 2003, Server 2008, Vista)
 echo       ^^
 echo       ^|__ If your computer is OLD (before 2012), choose this!
 echo       ^|__ Safe low-priority tools that won't crash old systems
-echo       ^|__ Includes: FTK x86 (memory ^& disk imaging), THOR Lite x86
+echo       ^|__ Includes: FTK x86 (disk imaging), THOR Lite x86
 echo.
 echo   [Q] Quit - Exit the program
 echo.
@@ -157,10 +157,10 @@ echo       ^|__ FINDS: Viruses, ransomware, APT tools, rootkits, IOCs
 echo       ^|__ TIME: 1-4 hours  ^|  DISK SPACE NEEDED: ~50MB
 echo       ^|__ BEST FOR: Checking if system is compromised/infected
 echo.
-echo   [3] FTK - Complete Disk or Memory Copy (For advanced users)
+echo   [3] FTK - Complete Disk Copy (For advanced users)
 echo       ^^
-echo       ^|__ WHAT IT DOES: Makes exact copy of hard drive or RAM
-echo       ^|__ CREATES: Forensic disk image or memory dump
+echo       ^|__ WHAT IT DOES: Makes exact bit-for-bit copy of hard drive
+echo       ^|__ CREATES: Forensic disk image (RAW format)
 echo       ^|__ TIME: 2-8 hours  ^|  DISK SPACE NEEDED: 10GB - 100GB+
 echo       ^|__ BEST FOR: Deep forensic analysis, legal evidence
 echo       ^|__ WARNING: Takes LONG time and LOTS of space!
@@ -381,16 +381,19 @@ if /I "!KChoice!"=="B" goto MODERN_MODE
 goto KAPE_MENU
 
 :: ============================================================================
-::  FTK IMAGER SUB-MENU (Disk or Memory)
+::  FTK IMAGER SUB-MENU (Disk Image Only)
+::  NOTE: FTK Imager CLI does NOT support memory capture (--capture-memory
+::  is not a valid flag). Memory capture is GUI-only. Use KAPE's
+::  MagnetForensics_RAMCapture module for CLI memory acquisition instead.
 :: ============================================================================
 :FTK_MENU
 cls
 echo.
 echo   ========================================================================
-echo   [ FTK IMAGER - COMPLETE FORENSIC COPY TOOL ]
+echo   [ FTK IMAGER - COMPLETE FORENSIC DISK COPY TOOL ]
 echo   ========================================================================
 echo.
-echo   WARNING: These are ADVANCED tools that take a LONG time!
+echo   WARNING: This is an ADVANCED tool that takes a LONG time!
 echo            Only use if you know what you're doing.
 echo.
 echo   [1] Disk Image - Make EXACT copy of entire C: drive
@@ -401,127 +404,83 @@ echo       ^|__ TIME: 2-8 hours  ^|  SPACE: 20GB - 100GB+ (huge file!)
 echo       ^|__ FILE FORMAT: RAW image, compressed, split into chunks
 echo       ^|__ BEST FOR: Legal evidence, deep forensics, deleted file recovery
 echo       ^|__ WARNING: This takes HOURS! Don't interrupt or turn off PC!
-echo.
-echo   [2] Memory Dump - Copy everything in RAM right NOW
-echo       ^^
-echo       ^|__ WHAT IT DOES: Captures snapshot of RAM memory
-echo       ^|__ CAPTURES: Running programs, open files, passwords in memory
-echo       ^|__ TIME: 5-15 minutes  ^|  SPACE: Same size as your RAM
-echo       ^|__ FILE FORMAT: .mem file with compression
-echo       ^|__ BEST FOR: Malware analysis, volatile data preservation
-echo       ^|__ EXAMPLE: 16GB RAM = creates 16GB memory dump file
+echo       ^|__ IMPORTANT: Output MUST be on a DIFFERENT physical drive!
 echo.
 echo   [B] Back - Return to tools menu
 echo.
 echo   ========================================================================
-echo   HOW TO USE: Type 1 or 2 and press ENTER (This takes a LONG time!)
+echo   HOW TO USE: Type 1 and press ENTER (This takes a LONG time!)
 echo   ========================================================================
 set "FChoice="
 set /p "FChoice=[?] Enter your choice: "
 
-if /I "!FChoice!"=="1" (
-    cls
-    echo.
-    echo   ====================================================================
-    echo   DISK IMAGE ACQUISITION - C: DRIVE
-    echo   ====================================================================
-    echo.
-
-    if not exist "%BIN%\FTK\x64\ftkimager.exe" (
-        echo   [ERROR] FTK Imager (x64) not found!
-        echo.
-        echo   Expected location: %BIN%\FTK\x64\ftkimager.exe
-        echo   Please verify the tool is installed correctly.
-        echo.
-        pause
-        goto FTK_MENU
-    )
-
-    echo   Drive: C: (Logical Volume)
-    echo   Output: %EVIDENCE%\%COMPUTERNAME%_Disk.raw
-    echo   Format: RAW with maximum compression
-    echo   Fragment Size: 1TB segments
-    echo.
-    echo   [WARN] This creates VERY LARGE files!
-    echo   [WARN] Ensure you have 50GB+ free space.
-    echo   [WARN] This will take 2-8 hours depending on disk size.
-    echo.
-    echo   ====================================================================
-    echo.
-    set /p "Confirm=Continue with disk imaging? (Y/N): "
-    if /I not "!Confirm!"=="Y" goto FTK_MENU
-
-    echo.
-    echo   [INFO] Starting FTK Imager...
-    echo   [INFO] Progress will be shown in the FTK window.
-    echo   [WAIT] Do not close this window during imaging!
-    echo.
-
-    start /low /wait "" "%BIN%\FTK\x64\ftkimager.exe" C: "%EVIDENCE%\%COMPUTERNAME%_Disk.raw" --compress 9 --frag 1TB
-
-    echo.
-    echo   ====================================================================
-    echo   [SUCCESS] Disk Image Complete!
-    echo   ====================================================================
-    echo.
-    echo   Image Location: %EVIDENCE%\%COMPUTERNAME%_Disk.raw
-    echo.
-    echo   Note: If image is larger than 1TB, it will be split into:
-    echo   - %COMPUTERNAME%_Disk.raw
-    echo   - %COMPUTERNAME%_Disk.raw.001
-    echo   - %COMPUTERNAME%_Disk.raw.002 (etc.)
-    echo.
-    pause
-    goto FTK_MENU
-)
-
-if /I "!FChoice!"=="2" (
-    cls
-    echo.
-    echo   ====================================================================
-    echo   MEMORY DUMP ACQUISITION
-    echo   ====================================================================
-    echo.
-
-    if not exist "%BIN%\FTK\x64\ftkimager.exe" (
-        echo   [ERROR] FTK Imager (x64) not found!
-        echo.
-        echo   Expected location: %BIN%\FTK\x64\ftkimager.exe
-        echo.
-        pause
-        goto FTK_MENU
-    )
-
-    echo   Output: %EVIDENCE%\%COMPUTERNAME%_Memory.mem
-    echo   Format: .mem with light compression
-    echo.
-    echo   [INFO] Memory dump size will equal your installed RAM.
-    echo   [INFO] Example: 16GB RAM = ~16GB file
-    echo.
-    echo   ====================================================================
-    echo.
-    set /p "Confirm=Continue with memory capture? (Y/N): "
-    if /I not "!Confirm!"=="Y" goto FTK_MENU
-
-    echo.
-    echo   [INFO] Starting memory capture...
-    echo   [INFO] Progress will be shown in the FTK window.
-    echo.
-
-    start /wait "" "%BIN%\FTK\x64\ftkimager.exe" --capture-memory "%EVIDENCE%\%COMPUTERNAME%_Memory.mem" --compress 1
-
-    echo.
-    echo   ====================================================================
-    echo   [SUCCESS] Memory Capture Complete!
-    echo   ====================================================================
-    echo.
-    echo   Memory Dump: %EVIDENCE%\%COMPUTERNAME%_Memory.mem
-    echo.
-    pause
-    goto FTK_MENU
-)
-
+if /I "!FChoice!"=="1" goto FTK_DISK
 if /I "!FChoice!"=="B" goto MODERN_MODE
+goto FTK_MENU
+
+:FTK_DISK
+cls
+echo.
+echo   ====================================================================
+echo   DISK IMAGE ACQUISITION - C: DRIVE
+echo   ====================================================================
+echo.
+
+if not exist "%BIN%\FTK\x64\ftkimager.exe" (
+    echo   [ERROR] FTK Imager (x64) not found!
+    echo.
+    echo   Expected location: %BIN%\FTK\x64\ftkimager.exe
+    echo   Please verify the tool is installed correctly.
+    echo.
+    pause
+    goto FTK_MENU
+)
+
+echo   FTK Imager CANNOT save to the same drive being imaged.
+echo   You MUST specify an external drive or different physical disk.
+echo.
+echo   Examples:  E:\Evidence    D:\Cases    F:\
+echo.
+set "FTK_OUT="
+set /p "FTK_OUT=[?] Enter output path (external drive): "
+if "!FTK_OUT!"=="" goto FTK_MENU
+
+echo.
+echo   Drive: C: (Logical Volume)
+echo   Output: !FTK_OUT!\%COMPUTERNAME%_Disk.raw
+echo   Format: RAW with maximum compression
+echo   Fragment Size: 1TB segments
+echo.
+echo   [WARN] This creates VERY LARGE files!
+echo   [WARN] Ensure you have 50GB+ free space on the destination.
+echo   [WARN] This will take 2-8 hours depending on disk size.
+echo.
+echo   ====================================================================
+echo.
+set /p "Confirm=Continue with disk imaging? (Y/N): "
+if /I not "!Confirm!"=="Y" goto FTK_MENU
+
+echo.
+echo   [INFO] Starting FTK Imager...
+echo   [INFO] Progress will be shown in the FTK window.
+echo   [WAIT] Do not close this window during imaging!
+echo.
+
+start /low /wait "" "%BIN%\FTK\x64\ftkimager.exe" C: "!FTK_OUT!\%COMPUTERNAME%_Disk.raw" --compress 9 --frag 1TB
+
+echo.
+echo   ====================================================================
+echo   [SUCCESS] Disk Image Complete!
+echo   ====================================================================
+echo.
+echo   Image Location: !FTK_OUT!\%COMPUTERNAME%_Disk.raw
+echo.
+echo   Note: If image is larger than 1TB, it will be split into:
+echo   - %COMPUTERNAME%_Disk.raw
+echo   - %COMPUTERNAME%_Disk.raw.001
+echo   - %COMPUTERNAME%_Disk.raw.002 (etc.)
+echo.
+pause
 goto FTK_MENU
 
 :: ============================================================================
@@ -548,15 +507,7 @@ echo   ^|  - No PowerShell required (old systems don't have it)               ^|
 echo   ^|  - Takes longer but won't crash your system                         ^|
 echo   +----------------------------------------------------------------------+
 echo.
-echo   [1] Memory Capture - Copy RAM (Safe for old systems)
-echo       ^^
-echo       ^|__ WHAT IT DOES: Captures what's in your computer's memory
-echo       ^|__ RUNS: FTK Imager x86 (32-bit version)
-echo       ^|__ TIME: 10-20 minutes (slower than modern mode)
-echo       ^|__ SPACE: Same size as your RAM (example: 2GB RAM = 2GB file)
-echo       ^|__ SAFETY: Runs at LOW priority - won't freeze your PC
-echo.
-echo   [2] Disk Image - Copy entire C: drive (Takes MANY hours!)
+echo   [1] Disk Image - Copy entire C: drive (Takes MANY hours!)
 echo       ^^
 echo       ^|__ WHAT IT DOES: Makes complete copy of C: drive
 echo       ^|__ RUNS: FTK Imager x86 (32-bit version)
@@ -564,115 +515,79 @@ echo       ^|__ TIME: 3-10 hours (depends on hard drive size)
 echo       ^|__ SPACE: 20GB - 100GB+ (needs LOTS of free space!)
 echo       ^|__ SAFETY: Runs at LOW priority - safe but SLOW
 echo       ^|__ WARNING: Do NOT turn off computer while running!
+echo       ^|__ IMPORTANT: Output MUST be on a DIFFERENT physical drive!
 echo.
 echo   [B] Back - Return to main menu
 echo.
 echo   ========================================================================
-echo   HOW TO USE: Type 1 or 2 and press ENTER
+echo   HOW TO USE: Type 1 and press ENTER
 echo   ========================================================================
 set "LChoice="
 set /p "LChoice=[?] Enter your choice: "
 
-if /I "!LChoice!"=="1" (
-    cls
-    echo.
-    echo   ====================================================================
-    echo   LEGACY MEMORY CAPTURE
-    echo   ====================================================================
-    echo.
-
-    if not exist "%BIN%\FTK\x86\ftkimager.exe" (
-        echo   [ERROR] FTK x86 binary not found!
-        echo.
-        echo   Expected: %BIN%\FTK\x86\ftkimager.exe
-        echo   Please verify the legacy version is installed.
-        echo.
-        pause
-        goto LEGACY_MODE
-    )
-
-    echo   Tool: FTK Imager x86 (32-bit)
-    echo   Output: %EVIDENCE%\%COMPUTERNAME%_Memory.mem
-    echo   Priority: LOW (system-safe)
-    echo.
-    echo   [INFO] Memory size will equal installed RAM.
-    echo   [INFO] Running at low priority to prevent system stress.
-    echo.
-    echo   ====================================================================
-    echo.
-    set /p "Confirm=Continue? (Y/N): "
-    if /I not "!Confirm!"=="Y" goto LEGACY_MODE
-
-    echo.
-    echo   [INFO] Starting memory capture...
-    echo   [INFO] Running with LOW CPU priority for system safety.
-    echo.
-
-    start /low /wait "" "%BIN%\FTK\x86\ftkimager.exe" --capture-memory "%EVIDENCE%\%COMPUTERNAME%_Memory.mem" --compress 1
-
-    echo.
-    echo   ====================================================================
-    echo   [SUCCESS] Memory Capture Complete!
-    echo   ====================================================================
-    echo.
-    echo   Memory Dump: %EVIDENCE%\%COMPUTERNAME%_Memory.mem
-    echo.
-    pause
-    goto LEGACY_MODE
-)
-
-if /I "!LChoice!"=="2" (
-    cls
-    echo.
-    echo   ====================================================================
-    echo   LEGACY DISK IMAGE - C: DRIVE
-    echo   ====================================================================
-    echo.
-
-    if not exist "%BIN%\FTK\x86\ftkimager.exe" (
-        echo   [ERROR] FTK x86 binary not found!
-        echo.
-        echo   Expected: %BIN%\FTK\x86\ftkimager.exe
-        echo.
-        pause
-        goto LEGACY_MODE
-    )
-
-    echo   Tool: FTK Imager x86 (32-bit)
-    echo   Drive: C: (Logical Volume)
-    echo   Output: %EVIDENCE%\%COMPUTERNAME%_Disk.raw
-    echo   Priority: LOW (system-safe)
-    echo   Format: RAW with maximum compression
-    echo.
-    echo   [WARN] This creates VERY LARGE files!
-    echo   [WARN] Ensure 50GB+ free space on your USB drive.
-    echo   [WARN] Expect 3-10 hours on older systems.
-    echo.
-    echo   ====================================================================
-    echo.
-    set /p "Confirm=Continue with disk imaging? (Y/N): "
-    if /I not "!Confirm!"=="Y" goto LEGACY_MODE
-
-    echo.
-    echo   [INFO] Starting disk imaging...
-    echo   [INFO] Running with LOW CPU priority for system safety.
-    echo   [INFO] Do not interrupt or power off during imaging!
-    echo.
-
-    start /low /wait "" "%BIN%\FTK\x86\ftkimager.exe" C: "%EVIDENCE%\%COMPUTERNAME%_Disk.raw" --compress 9 --frag 1TB
-
-    echo.
-    echo   ====================================================================
-    echo   [SUCCESS] Disk Image Complete!
-    echo   ====================================================================
-    echo.
-    echo   Image Location: %EVIDENCE%\%COMPUTERNAME%_Disk.raw
-    echo.
-    pause
-    goto LEGACY_MODE
-)
-
+if /I "!LChoice!"=="1" goto LEGACY_DISK
 if /I "!LChoice!"=="B" goto MAIN_MENU
+goto LEGACY_MODE
+
+:LEGACY_DISK
+cls
+echo.
+echo   ====================================================================
+echo   LEGACY DISK IMAGE - C: DRIVE
+echo   ====================================================================
+echo.
+
+if not exist "%BIN%\FTK\x86\ftkimager.exe" (
+    echo   [ERROR] FTK x86 binary not found!
+    echo.
+    echo   Expected: %BIN%\FTK\x86\ftkimager.exe
+    echo   Please verify the legacy version is installed.
+    echo.
+    pause
+    goto LEGACY_MODE
+)
+
+echo   FTK Imager CANNOT save to the same drive being imaged.
+echo   You MUST specify an external drive or different physical disk.
+echo.
+echo   Examples:  E:\Evidence    D:\Cases    F:\
+echo.
+set "FTK_OUT="
+set /p "FTK_OUT=[?] Enter output path (external drive): "
+if "!FTK_OUT!"=="" goto LEGACY_MODE
+
+echo.
+echo   Tool: FTK Imager x86 (32-bit)
+echo   Drive: C: (Logical Volume)
+echo   Output: !FTK_OUT!\%COMPUTERNAME%_Disk.raw
+echo   Priority: LOW (system-safe)
+echo   Format: RAW with maximum compression
+echo.
+echo   [WARN] This creates VERY LARGE files!
+echo   [WARN] Ensure 50GB+ free space on the destination.
+echo   [WARN] Expect 3-10 hours on older systems.
+echo.
+echo   ====================================================================
+echo.
+set /p "Confirm=Continue with disk imaging? (Y/N): "
+if /I not "!Confirm!"=="Y" goto LEGACY_MODE
+
+echo.
+echo   [INFO] Starting disk imaging...
+echo   [INFO] Running with LOW CPU priority for system safety.
+echo   [INFO] Do not interrupt or power off during imaging!
+echo.
+
+start /low /wait "" "%BIN%\FTK\x86\ftkimager.exe" C: "!FTK_OUT!\%COMPUTERNAME%_Disk.raw" --compress 9 --frag 1TB
+
+echo.
+echo   ====================================================================
+echo   [SUCCESS] Disk Image Complete!
+echo   ====================================================================
+echo.
+echo   Image Location: !FTK_OUT!\%COMPUTERNAME%_Disk.raw
+echo.
+pause
 goto LEGACY_MODE
 
 :: ============================================================================
