@@ -175,58 +175,62 @@ set /p "MChoice=[?] Enter your choice: "
 
 if /I "!MChoice!"=="1" goto KAPE_MENU
 
-if /I "!MChoice!"=="2" (
-    cls
-    echo.
-    echo   ====================================================================
-    echo   THOR MALWARE SCANNER
-    echo   ====================================================================
-    echo.
-    echo   This will scan your system for:
-    echo   - Malware signatures and IOCs
-    echo   - APT indicators and suspicious files
-    echo   - Registry persistence mechanisms
-    echo   - Rootkits and anomalies
-    echo.
-    echo   ESTIMATED TIME: 1-4 hours (depends on system size)
-    echo   OUTPUT: %EVIDENCE%\%COMPUTERNAME%_THOR
-    echo.
-    echo   ====================================================================
-    echo.
-    set /p "Confirm=Continue with THOR scan? (Y/N): "
-    if /I not "!Confirm!"=="Y" goto MODERN_MODE
-
-    echo.
-    echo [INFO] Creating output directory...
-    if not exist "%EVIDENCE%\%COMPUTERNAME%_THOR" mkdir "%EVIDENCE%\%COMPUTERNAME%_THOR"
-
-    echo [INFO] Starting THOR scan...
-    echo [INFO] Progress will be shown in the THOR window that opens.
-    echo [WAIT] Do not close this window or the THOR window!
-    echo.
-
-    :: Arguments: --utc --nothordb
-    start /wait "" "%BIN%\THOR\thor64-lite.exe" --logfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt" --htmlfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html" --utc --nothordb
-
-    echo.
-    echo   ====================================================================
-    echo   [SUCCESS] THOR Scan Complete!
-    echo   ====================================================================
-    echo.
-    echo   Results saved to:
-    echo   - Text log:  %EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt
-    echo   - HTML report: %EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html
-    echo.
-    echo   Review the HTML report for findings and alerts.
-    echo   ====================================================================
-    echo.
-    pause
-    goto MODERN_MODE
-)
+if /I "!MChoice!"=="2" goto THOR_SCAN
 
 if /I "!MChoice!"=="3" goto FTK_MENU
 
 if /I "!MChoice!"=="B" goto MAIN_MENU
+goto MODERN_MODE
+
+:: ============================================================================
+::  THOR SCAN
+:: ============================================================================
+:THOR_SCAN
+cls
+echo.
+echo   ====================================================================
+echo   THOR MALWARE SCANNER
+echo   ====================================================================
+echo.
+echo   This will scan your system for:
+echo   - Malware signatures and IOCs
+echo   - APT indicators and suspicious files
+echo   - Registry persistence mechanisms
+echo   - Rootkits and anomalies
+echo.
+echo   ESTIMATED TIME: 1-4 hours (depends on system size)
+echo   OUTPUT: %EVIDENCE%\%COMPUTERNAME%_THOR
+echo.
+echo   ====================================================================
+echo.
+set /p "Confirm=Continue with THOR scan? (Y/N): "
+if /I not "!Confirm!"=="Y" goto MODERN_MODE
+
+echo.
+echo [INFO] Creating output directory...
+if not exist "%EVIDENCE%\%COMPUTERNAME%_THOR" mkdir "%EVIDENCE%\%COMPUTERNAME%_THOR"
+
+echo [INFO] Starting THOR scan...
+echo [INFO] Progress will be shown in the THOR window that opens.
+echo [WAIT] Do not close this window or the THOR window!
+echo.
+
+REM Arguments: --utc --nothordb
+start /wait "" "%BIN%\THOR\thor64-lite.exe" --logfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt" --htmlfile "%EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html" --utc --nothordb
+
+echo.
+echo   ====================================================================
+echo   [SUCCESS] THOR Scan Complete!
+echo   ====================================================================
+echo.
+echo   Results saved to:
+echo   - Text log:  %EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.txt
+echo   - HTML report: %EVIDENCE%\%COMPUTERNAME%_THOR\%COMPUTERNAME%.html
+echo.
+echo   Review the HTML report for findings and alerts.
+echo   ====================================================================
+echo.
+pause
 goto MODERN_MODE
 
 :: ============================================================================

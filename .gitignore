@@ -1,0 +1,32 @@
+# Project Cerberus Ignore File
+
+# CRITICAL: Never upload Evidence or Logs
+Evidence/
+Logs/
+
+# SECURITY: Config contains MinIO credentials - never commit!
+Cerberus_Config.json
+
+# Temporary Files
+*.tmp
+*.log
+debug_*.log
+
+# KAPE Console Logs
+Bin/KAPE/*_ConsoleLog.txt
+
+# Claude Code Configuration
+.claude/
+CLAUDE.md
+
+# Editor Files
+.vscode/
+.idea/
+
+# Windows system files
+Thumbs.db
+desktop.ini
+
+# Large binaries (Optional - remove if you have LFS)
+# *.exe
+# *.zip
