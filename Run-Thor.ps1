@@ -107,9 +107,11 @@ if ($targetFreeGB -lt $SPACE_REQUIREMENTS.ThorGB) {
 }
 Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
 Write-Log "" "INFO"
-Write-Log "Press any key to start THOR scan, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Write-Log "" "INFO"
+if ([Environment]::UserInteractive) {
+    Write-Log "Press any key to start THOR scan, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Log "" "INFO"
+}
 
 
 # =============================================================================

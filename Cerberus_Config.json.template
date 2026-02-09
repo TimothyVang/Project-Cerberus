@@ -8,7 +8,11 @@
     "Paths": {
         "EvidenceRoot": "${ScriptRoot}\\Evidence",
         "FTK": "",
+        "EnableCustomPaths": false,
         "_FTK_WARNING": "REQUIRED FOR FTK: Set to external drive path (e.g., E:\\Evidence). FTK disk images are 100GB-2TB and WILL crash your system if saved locally!"
+    },
+    "Naming": {
+        "IncludeDomain": false
     },
     "Tools": {
         "Thor": {

@@ -24,7 +24,8 @@ Project_Cerberus/
 │   ├── Cerberus-Constants.ps1 # Timeouts, thresholds, paths
 │   ├── Cerberus-Config.ps1    # Load & validate JSON config
 │   ├── Cerberus-Upload.ps1    # MinIO upload functions
-│   └── Cerberus-RunTool.ps1   # Heartbeat monitoring
+│   ├── Cerberus-RunTool.ps1   # Heartbeat monitoring
+│   └── Cerberus-Bootstrap.ps1 # Shared boilerplate for Run-*.ps1
 ├── Cerberus_Launcher.bat  # USB Launcher (Double-click this)
 ├── Cerberus.ps1           # Remote Entry Point (simple syntax)
 ├── Run-Thor.ps1           # THOR malware scan
@@ -277,4 +278,4 @@ mc put -r "C:\Evidence\HOSTNAME-THOR" "minio\upload" --insecure
 | **Test-NetConnection** | https://learn.microsoft.com/en-us/powershell/module/nettcpip/test-netconnection |
 
 ---
-*Project Cerberus SOP v2.5 - Updated Jan 2026*
+*Project Cerberus SOP v2.4 - Updated Jan 2026*

@@ -47,7 +47,7 @@ function Start-ToolWithMonitoring {
             -ExePath "C:\THOR\thor64-lite.exe" `
             -Arguments "--logfile log.txt" `
             -ToolName "THOR" `
-            -TimeoutMs 172800000
+            -TimeoutMs $TIMEOUTS.Thor
     #>
     param(
         [Parameter(Mandatory = $true)]

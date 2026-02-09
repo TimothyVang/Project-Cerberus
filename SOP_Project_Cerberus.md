@@ -73,9 +73,12 @@ Project_Cerberus/
 ├── Evidence/                 # Collection output (auto-created)
 ├── Logs/                     # Operation logs
 ├── Lib/                      # Shared PowerShell modules
+│   ├── Cerberus-Bootstrap.ps1 # Shared boilerplate for Run-*.ps1
+│   └── ...                    # (Constants, Config, Upload, RunTool, Write-Log)
 ├── Splits/                   # Pre-split packages for Elastic upload
 ├── Cerberus_Launcher.bat     # USB/Local launcher (TUI)
 ├── Cerberus.ps1              # Remote entry point
+├── Launch-Scans.ps1          # Parallel launcher (e.g., -Thor -KapeDisk -Ftk)
 ├── Cerberus_Config.json      # Configuration file (EDIT THIS)
 ├── Run-Thor.ps1              # THOR execution script
 ├── Run-KapeDisk.ps1          # KAPE disk collection

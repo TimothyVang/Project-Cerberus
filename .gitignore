@@ -4,6 +4,9 @@
 Evidence/
 Logs/
 
+# Build output from Build-ElasticPackage.ps1
+Splits/
+
 # SECURITY: Config contains MinIO credentials - never commit!
 Cerberus_Config.json
 

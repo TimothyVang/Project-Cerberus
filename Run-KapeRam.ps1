@@ -111,9 +111,11 @@ if ($targetFreeGB -lt $requiredGB) {
 }
 Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
 Write-Log "" "INFO"
-Write-Log "Press any key to start memory capture, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Write-Log "" "INFO"
+if ([Environment]::UserInteractive) {
+    Write-Log "Press any key to start memory capture, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Log "" "INFO"
+}
 
 
 # =============================================================================

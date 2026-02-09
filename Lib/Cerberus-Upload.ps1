@@ -93,8 +93,8 @@ function Get-RemoteFileInfo {
         [string]$ScriptRoot
     )
     
-    $MinioExe = "$ScriptRoot\Bin\MinIO\mc.exe"
-    
+    $MinioExe = "$ScriptRoot\$($PATHS.MinIO)"
+
     if (-not (Test-Path $MinioExe)) {
         return $null
     }
@@ -275,7 +275,7 @@ function Send-ToMinIO {
     # Initialize upload log session
     Initialize-LogSession -Operation "UPLOAD" -ScriptRoot $ScriptRoot
     
-    $MinioExe = "$ScriptRoot\Bin\MinIO\mc.exe"
+    $MinioExe = "$ScriptRoot\$($PATHS.MinIO)"
     $EvidenceFolder = Split-Path $FilePath -Parent
     $FileName = Split-Path $FilePath -Leaf
     

@@ -12,7 +12,8 @@ Project_Cerberus/
 │   ├── Cerberus-Constants.ps1 # Timeouts, thresholds, paths
 │   ├── Cerberus-Config.ps1    # Load & validate JSON config
 │   ├── Cerberus-Upload.ps1    # MinIO upload functions
-│   └── Cerberus-RunTool.ps1   # Heartbeat monitoring
+│   ├── Cerberus-RunTool.ps1   # Heartbeat monitoring
+│   └── Cerberus-Bootstrap.ps1 # Shared boilerplate for Run-*.ps1
 ├── Cerberus_Launcher.bat  # [MODE 1] Local/USB Terminal Interface
 ├── Cerberus.ps1           # [MODE 2] Remote Entry Point (simple syntax)
 ├── Run-Thor.ps1           # THOR malware scan
@@ -206,7 +207,7 @@ mc put "Evidence\HOSTNAME-FTK.zip" minio\upload --insecure
 **Compression Details**:
 - Compression ratios typically 30-50% of original size
 - Large files (>100MB) are always compressed before upload
-- All evidence folders automatically zipped: THOR, KAPE-Disk, KAPE-RAM, FTK
+- All evidence folders automatically zipped: THOR, KAPE-Disk, KAPE-Ram, FTK
 - Preserves chain of custody by keeping originals intact
 
 **Example Output**:
@@ -216,8 +217,8 @@ Evidence/
 ├── HOSTNAME-THOR.zip           # Compressed and uploaded to MinIO
 ├── HOSTNAME-KAPE-Disk/         # Original folder (preserved locally)
 ├── HOSTNAME-KAPE-Disk.zip      # Compressed and uploaded to MinIO
-├── HOSTNAME-RAM/               # Original folder (preserved locally)
-├── HOSTNAME-RAM.zip            # Compressed and uploaded to MinIO
+├── HOSTNAME-KAPE-Ram/          # Original folder (preserved locally)
+├── HOSTNAME-KAPE-Ram.zip       # Compressed and uploaded to MinIO
 ├── HOSTNAME-Disk.raw           # FTK disk image segments (preserved)
 └── HOSTNAME-FTK.zip            # All disk segments compressed together
 ```
@@ -243,7 +244,7 @@ Logs/
     HOSTNAME-DOMAIN-THOR_20260116_103045.log      # THOR scan log
     HOSTNAME-DOMAIN-UPLOAD_20260116_110030.log    # Separate upload log
     HOSTNAME-DOMAIN-KAPE-Disk_20260116_143022.log # KAPE disk artifacts
-    HOSTNAME-DOMAIN-KAPE-RAM_20260116_150000.log  # RAM capture
+    HOSTNAME-DOMAIN-KAPE-Ram_20260116_150000.log  # RAM capture
 ```
 
 **Retrieve logs remotely:**

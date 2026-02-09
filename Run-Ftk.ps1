@@ -191,9 +191,11 @@ Write-Log "" "INFO"
 Write-Log "STATUS: OK - Ready to image" "SUCCESS" -Category "PREFLIGHT"
 Write-Log "===========================================" "INFO" -Category "PREFLIGHT"
 Write-Log "" "INFO"
-Write-Log "Press any key to start FTK imaging, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-Write-Log "" "INFO"
+if ([Environment]::UserInteractive) {
+    Write-Log "Press any key to start FTK imaging, or Ctrl+C to cancel..." "INFO" -Category "PREFLIGHT"
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Log "" "INFO"
+}
 
 
 # =============================================================================

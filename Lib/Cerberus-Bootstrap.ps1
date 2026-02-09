@@ -98,7 +98,7 @@ function Initialize-CerberusRun {
     #>
     param(
         [Parameter(Mandatory)]
-        [ValidateSet("THOR", "KAPE-Disk", "KAPE-Ram", "FTK", "UPLOAD", "UPLOAD-ONLY")]
+        [ValidateSet("THOR", "KAPE-Disk", "KAPE-Ram", "KAPE-Combined", "FTK", "UPLOAD", "UPLOAD-ONLY")]
         [string]$Operation,
 
         [Parameter(Mandatory)]
